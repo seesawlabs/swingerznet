@@ -769,9 +769,26 @@ function startPhysBall(){
   requestAnimationFrame(tick);
 }
 
+/* Signup thwack. Kept as a separate file rather than a data: URI - base64 adds
+   ~33% to a 71KB clip, and unlike the fonts and logos this is never needed for
+   first paint. preload='auto' so the first press is not silent while it fetches. */
+var thwack=new Audio('thwack.mp3');
+thwack.preload='auto';
+
+function playThwack(){
+  try{
+    thwack.currentTime=0;
+    var p=thwack.play();
+    /* Blocked audio rejects the promise. Swallow it: a muted tab or a browser
+       that declines the gesture must never stop the signup from going through. */
+    if(p&&p.catch)p.catch(function(){});
+  }catch(e){}
+}
+
 function submit(){
   var val=document.getElementById('email-input').value.trim();
   if(!val||!val.includes('@')){document.getElementById('email-input').focus();return;}
+  playThwack();
   var te=document.getElementById('thanks-email');
   if(te) te.textContent=val;
   physBall.style.display='none';
