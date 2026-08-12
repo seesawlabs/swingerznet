@@ -419,7 +419,10 @@ thwack.preload='auto';
 
 function playThwack(){
   try{
-    thwack.currentTime=0;
+    /* Only rewind if it has actually advanced. Assigning currentTime triggers
+       a seek, and a seek re-fires canplaythrough - which the boot listens on,
+       so an unconditional reset here turns a refused play into a loop. */
+    if(thwack.currentTime)thwack.currentTime=0;
     var p=thwack.play();
     /* Blocked audio rejects the promise. Swallow it here so a muted tab can
        never break a caller, and hand the promise back for callers that need
@@ -911,22 +914,55 @@ function dropBalls() {
 showHome();
 launchConfetti();
 
-/* Autoplay on load is best-effort by design. Browsers refuse to start audio
-   until the visitor has interacted with the page, so on a first visit this
-   play() is almost always rejected. When it is, arm the events that actually
-   grant playback permission - pointer, key and touch; scroll and wheel do not
-   count - and let the first real interaction fire the sound instead. */
+/* Play the thwack as early as the browser will allow.
+
+   Autoplay with sound is blocked until the visitor has interacted with the
+   page. That is a browser protection, not a setting we control, so a cold
+   first visit cannot be made to play on load - Chrome, Safari and Firefox all
+   refuse. What we can do is take every legitimate opportunity, in order:
+
+     1. immediately, which succeeds for returning visitors whose engagement
+        score has earned autoplay, and whenever a browser is configured to
+        allow it;
+     2. once the clip is buffered, in case the first attempt simply lost a
+        race with the network;
+     3. when the tab becomes visible, since a load in a background tab is
+        always refused;
+     4. otherwise on the first interaction of any kind.
+
+   Every attempt goes through the same function, and the listeners are torn
+   down only after playback has actually started. Disarming on the attempt
+   instead would lose the sound for good whenever that attempt is itself
+   refused - which is exactly what happens for events that do not grant
+   playback permission, such as scroll. */
 (function(){
-  var p=playThwack();
-  if(!p||!p.catch)return;
-  p.catch(function(){
-    var evs=['pointerdown','keydown','touchstart'];
-    function fire(){
-      evs.forEach(function(ev){window.removeEventListener(ev,fire);});
-      playThwack();
-    }
-    evs.forEach(function(ev){window.addEventListener(ev,fire,{passive:true});});
-  });
+  var played=false,pending=false;
+  var opts={capture:true,passive:true};
+  var evs=['pointerdown','pointerup','mousedown','click','keydown',
+           'touchstart','touchend','wheel','scroll'];
+
+  function disarm(){
+    evs.forEach(function(ev){window.removeEventListener(ev,attempt,opts);});
+    document.removeEventListener('visibilitychange',onVisible);
+  }
+  function attempt(){
+    /* pending guards against overlapping tries: these listeners can fire far
+       faster than a play promise settles, and without it a refused attempt
+       stacks up thousands of calls. */
+    if(played||pending)return;
+    var p=playThwack();
+    if(!p||!p.then){played=true;disarm();return;}
+    pending=true;
+    p.then(function(){played=true;pending=false;disarm();},
+           function(){pending=false;/* refused - stay armed */});
+  }
+  function onVisible(){if(!document.hidden)attempt();}
+
+  attempt();
+  /* once:true - a retry seeks, and a seek would re-fire this event. */
+  thwack.addEventListener('canplaythrough',attempt,{once:true});
+  document.addEventListener('visibilitychange',onVisible);
+  evs.forEach(function(ev){window.addEventListener(ev,attempt,opts);});
 })();
 </script>
 </body>
