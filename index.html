@@ -411,28 +411,6 @@ footer{background:transparent;padding:40px 24px;text-align:center}
 <div id="confetti-layer"></div>
 
 <script>
-/* Thwack. Kept as a separate file rather than a data: URI - base64 adds ~33%
-   to a 71KB clip, and unlike the fonts and logos this is never needed for
-   first paint. preload='auto' so it is ready the moment the page opens. */
-var thwack=new Audio('thwack.mp3');
-thwack.preload='auto';
-
-function playThwack(){
-  try{
-    /* Only rewind if it has actually advanced. Assigning currentTime triggers
-       a seek, and a seek re-fires canplaythrough - which the boot listens on,
-       so an unconditional reset here turns a refused play into a loop. */
-    if(thwack.currentTime)thwack.currentTime=0;
-    var p=thwack.play();
-    /* Blocked audio rejects the promise. Swallow it here so a muted tab can
-       never break a caller, and hand the promise back for callers that need
-       to know whether playback actually started. */
-    if(p&&p.catch){p.catch(function(){});return p;}
-  }catch(e){}
-  return null;
-}
-
-
 /* The four mascot faces from ball-mascot.svg, minus the speed trail. */
 var _BALLS=[
   "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%22321%20445%20373%20363%22%3E%3Cstyle%3E.st0%20%7B%20stroke-width%3A%205px%3B%20%7D%20.st0%2C%20.st1%20%7B%20stroke%3A%20%23080605%3B%20stroke-linecap%3A%20round%3B%20stroke-linejoin%3A%20round%3B%20%7D%20.st0%2C%20.st1%2C%20.st2%20%7B%20fill%3A%20%23fff200%3B%20%7D%20.st3%20%7B%20fill%3A%20%23080605%3B%20%7D%20.st4%20%7B%20fill%3A%20%23fff%3B%20%7D%20.st1%20%7B%20stroke-width%3A%20.9px%3B%20%7D%20.st5%20%7B%20fill%3A%20%23bcc0a4%3B%20%7D%20.st6%20%7B%20display%3A%20none%3B%20%7D%20.st7%20%7B%20fill%3A%20%2318110d%3B%20%7D%3C%2Fstyle%3E%3Cg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%0A%20%20%20%20%3Cellipse%20class%3D%22st0%22%20cx%3D%22507.2%22%20cy%3D%22626.4%22%20rx%3D%22180.7%22%20ry%3D%22175.4%22%2F%3E%0A%20%20%20%20%3Cg%3E%0A%20%20%20%20%20%20%3Cpath%20class%3D%22st7%22%20d%3D%22M521.3%2C667.5c.5-6.6%2C3.8-10.9%2C7.8-14.4s9.6-3.9%2C15.3-2.6l28.2%2C6.5c26.5%2C3.4%2C39.1-12.5%2C47.9-5.1%2C9.4%2C7.9-.8%2C48.1-32.2%2C63.3-11.3%2C5.5-24%2C6.8-35.1%2C2.3-20.2-8.1-33.7-28.3-32-50ZM531.5%2C690.4c12.5%2C23%2C33%2C31.3%2C57.4%2C19-3.4-12.9-14.4-20.7-27.1-21.4.3%2C4.7%2C5.2%2C4.6%2C3.5%2C9.1-8.6-10.7-25.9-15.8-33.8-6.7Z%22%2F%3E%0A%20%20%20%20%20%20%3Cpath%20class%3D%22st7%22%20d%3D%22M484.9%2C597.4c-.7-19%2C11-36.8%2C30.2-39.4%2C13-1.8%2C25.8%2C3%2C34.3%2C13.3%2C7.2%2C8.7%2C10.8%2C20.8%2C8%2C33.4-3.2%2C14.8-14.1%2C26.8-29.6%2C29.6-22.6%2C4.1-42.1-13.8-43-36.9ZM509%2C627.2c11.3%2C5.5%2C23.9%2C2.8%2C32.7-4.9%2C9.1-7.9%2C13.2-19%2C11.4-31.5-1.4-9.5-7.5-19.5-17.4-24.9-15-8.2-33.7-2.9-41.8%2C12.7-9.2%2C17.4-2.9%2C39.8%2C15.2%2C48.6Z%22%2F%3E%0A%20%20%20%20%20%20%3Cpath%20class%3D%22st7%22%20d%3D%22M650.5%2C606.5c-.7%2C11.9-7.6%2C25.7-19.5%2C27.2-7.1.9-14.2-2-19.1-7.9-19.7-23.5-10.7-60.4%2C4.1-64%2C6.1-1.5%2C11.8-1.4%2C17.4%2C2.6%2C13.1%2C9.4%2C18.1%2C26%2C17.2%2C42.2ZM641.1%2C620.7c8.9-16.8%2C4.8-40.2-9.8-52.2-7.2-5.9-16.5-3.6-20.8%2C3.9-13.8%2C23.7%2C1.6%2C58.5%2C19.2%2C56.8%2C4-.4%2C8.6-3.3%2C11.4-8.5Z%22%2F%3E%0A%20%20%20%20%20%20%3Cpath%20class%3D%22st7%22%20d%3D%22M528.2%2C530.6c3.2%2C1.1%2C3.6%2C4%2C2.6%2C7-1.8%2C5.5-11.1.7-21.8%2C2.1-10.1%2C1.4-16.8%2C8.5-25.5%2C15.3%2C6.7-21.4%2C23.5-31.6%2C44.7-24.4Z%22%2F%3E%0A%20%20%20%20%20%20%3Cpath%20class%3D%22st7%22%20d%3D%22M620.7%2C533.8l4.4.5c8.3%2C4.3%2C14.1%2C11.7%2C17.4%2C20.3-3.1-.1-4.5-2.2-6-3.5-14.5-12.8-26.6-4.3-29.2-10.2-.9-2.1-1-5%2C1.3-7%2C4.5-4%2C10.8-.3%2C12.1-.1Z%22%2F%3E%0A%20%20%20%20%20%20%3Cpath%20class%3D%22st2%22%20d%3D%22M531.5%2C690.4c7.9-9%2C25.3-4%2C33.8%2C6.7%2C1.7-4.5-3.2-4.3-3.5-9.1%2C12.7.6%2C23.7%2C8.5%2C27.1%2C21.4-24.3%2C12.3-44.8%2C4-57.4-19Z%22%2F%3E%0A%20%20%20%20%20%20%3Cpath%20class%3D%22st4%22%20d%3D%22M509%2C627.2c-18.1-8.8-24.4-31.2-15.2-48.6%2C8.2-15.5%2C26.8-20.8%2C41.8-12.7%2C9.9%2C5.4%2C16%2C15.4%2C17.4%2C24.9%2C1.9%2C12.4-2.3%2C23.5-11.4%2C31.5-8.8%2C7.7-21.3%2C10.5-32.7%2C4.9ZM533.5%2C615c12.1-1.8%2C16.4-14.5%2C13.1-24.8-2.3-7.5-7.8-12.2-15.7-11.9-6.5.2-12.2%2C5.2-14.2%2C12.3-1.7%2C5.9-1%2C11.7%2C2.3%2C17%2C2.6%2C4.1%2C8%2C8.4%2C14.4%2C7.5Z%22%2F%3E%0A%20%20%20%20%20%20%3Cpath%20class%3D%22st4%22%20d%3D%22M641.1%2C620.7c-2.8%2C5.2-7.5%2C8.1-11.4%2C8.5-17.6%2C1.7-33-33.1-19.2-56.8%2C4.4-7.5%2C13.6-9.9%2C20.8-3.9%2C14.6%2C12%2C18.7%2C35.4%2C9.8%2C52.2ZM631.2%2C610.4c4.8-8.5%2C3.6-18.6-2.2-25.7-3.1-2.4-5.4-4.2-10-3.6-1.2.5-4.5%2C1.5-6.3%2C4.3-5.2%2C8.1-4.8%2C19.2%2C2%2C26.3%2C2.4%2C2.6%2C5.7%2C3.8%2C8.7%2C3.6%2C2.6-.2%2C6-1.6%2C7.8-4.8Z%22%2F%3E%0A%20%20%20%20%20%20%3Cpath%20class%3D%22st7%22%20d%3D%22M533.5%2C615c-6.4.9-11.9-3.4-14.4-7.5-3.3-5.2-4-11-2.3-17%2C2-7%2C7.6-12%2C14.2-12.3%2C7.9-.3%2C13.3%2C4.4%2C15.7%2C11.9%2C3.2%2C10.3-1%2C23-13.1%2C24.8ZM535.4%2C584.4c-3.3%2C1.8-2.8%2C5.8-1.4%2C7.9s4.4%2C2.6%2C6.7%2C1.5c3-1.5%2C2.9-4%2C2.3-5.8-1.1-3.3-4.5-5.2-7.6-3.5Z%22%2F%3E%0A%20%20%20%20%20%20%3Cpath%20class%3D%22st7%22%20d%3D%22M631.2%2C610.4c-1.8%2C3.2-5.2%2C4.6-7.8%2C4.8-3%2C.2-6.3-1-8.7-3.6-6.7-7.1-7.2-18.2-2-26.3s5.1-3.8%2C6.3-4.3c4.6-.6%2C6.9%2C1.3%2C10%2C3.6%2C5.8%2C7.2%2C7%2C17.2%2C2.2%2C25.7ZM627.1%2C594.7c3.3-.4%2C3.6-4%2C3-5.7-1-2.7-3.6-4.1-6.1-2.7s-2%2C4.3-1.3%2C5.7%2C1.7%2C3.1%2C4.5%2C2.7Z%22%2F%3E%0A%20%20%20%20%20%20%3Cpath%20class%3D%22st4%22%20d%3D%22M627.1%2C594.7c-2.8.4-3.8-1.4-4.5-2.7s-.3-4.9%2C1.3-5.7c2.5-1.3%2C5.2%2C0%2C6.1%2C2.7s.4%2C5.3-3%2C5.7Z%22%2F%3E%0A%20%20%20%20%20%20%3Cellipse%20class%3D%22st7%22%20cx%3D%22538.6%22%20cy%3D%22589%22%20rx%3D%225.6%22%20ry%3D%227.1%22%2F%3E%0A%20%20%20%20%20%20%3Cpath%20class%3D%22st4%22%20d%3D%22M539.4%2C594.7c-2.8.4-3.8-1.4-4.5-2.7s-.3-4.9%2C1.3-5.7c2.5-1.3%2C5.2%2C0%2C6.1%2C2.7.6%2C1.7.4%2C5.3-3%2C5.7Z%22%2F%3E%0A%20%20%20%20%3C%2Fg%3E%0A%20%20%3C%2Fg%3E%3C%2Fsvg%3E",
@@ -914,56 +892,6 @@ function dropBalls() {
 showHome();
 launchConfetti();
 
-/* Play the thwack as early as the browser will allow.
-
-   Autoplay with sound is blocked until the visitor has interacted with the
-   page. That is a browser protection, not a setting we control, so a cold
-   first visit cannot be made to play on load - Chrome, Safari and Firefox all
-   refuse. What we can do is take every legitimate opportunity, in order:
-
-     1. immediately, which succeeds for returning visitors whose engagement
-        score has earned autoplay, and whenever a browser is configured to
-        allow it;
-     2. once the clip is buffered, in case the first attempt simply lost a
-        race with the network;
-     3. when the tab becomes visible, since a load in a background tab is
-        always refused;
-     4. otherwise on the first interaction of any kind.
-
-   Every attempt goes through the same function, and the listeners are torn
-   down only after playback has actually started. Disarming on the attempt
-   instead would lose the sound for good whenever that attempt is itself
-   refused - which is exactly what happens for events that do not grant
-   playback permission, such as scroll. */
-(function(){
-  var played=false,pending=false;
-  var opts={capture:true,passive:true};
-  var evs=['pointerdown','pointerup','mousedown','click','keydown',
-           'touchstart','touchend','wheel','scroll'];
-
-  function disarm(){
-    evs.forEach(function(ev){window.removeEventListener(ev,attempt,opts);});
-    document.removeEventListener('visibilitychange',onVisible);
-  }
-  function attempt(){
-    /* pending guards against overlapping tries: these listeners can fire far
-       faster than a play promise settles, and without it a refused attempt
-       stacks up thousands of calls. */
-    if(played||pending)return;
-    var p=playThwack();
-    if(!p||!p.then){played=true;disarm();return;}
-    pending=true;
-    p.then(function(){played=true;pending=false;disarm();},
-           function(){pending=false;/* refused - stay armed */});
-  }
-  function onVisible(){if(!document.hidden)attempt();}
-
-  attempt();
-  /* once:true - a retry seeks, and a seek would re-fire this event. */
-  thwack.addEventListener('canplaythrough',attempt,{once:true});
-  document.addEventListener('visibilitychange',onVisible);
-  evs.forEach(function(ev){window.addEventListener(ev,attempt,opts);});
-})();
 </script>
 </body>
 </html>
