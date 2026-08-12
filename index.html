@@ -41,13 +41,40 @@
 html{font-size:16px;-webkit-text-size-adjust:100%}
 body{
   font-family:'DM Sans',system-ui,-apple-system,sans-serif;
-  background:#fff;color:#030213;
+  color:#030213;
   min-height:100dvh;overflow-x:hidden;
+}
+
+/* ── Bokeh ──
+   Out-of-focus tennis balls, matching the app store cards. Flat translucent
+   discs drawn as stacked radial-gradients: no DOM nodes and no image asset,
+   which matters in a file that inlines every other graphic as base64.
+   Painted once on body; every screen and section below is transparent so this
+   single background shows through all of them. Each layer carries its own tile
+   height, and the heights share no common factor, so the pattern does not
+   visibly repeat down the long homepage. */
+body{
+  --b1:rgba(255,242,0,.55);
+  --b2:rgba(0,166,81,.06);
+  background-color:#fffce6;
+  background-image:
+    radial-gradient(circle at  6%  140px, var(--b1) 0  96px, transparent  96px),
+    radial-gradient(circle at 94%  320px, var(--b2) 0 132px, transparent 132px),
+    radial-gradient(circle at  2%  560px, var(--b2) 0  64px, transparent  64px),
+    radial-gradient(circle at 97%  760px, var(--b1) 0  46px, transparent  46px),
+    radial-gradient(circle at 11%  980px, var(--b1) 0 150px, transparent 150px),
+    radial-gradient(circle at 90% 1180px, var(--b1) 0  74px, transparent  74px),
+    radial-gradient(circle at 40%  420px, var(--b2) 0  90px, transparent  90px),
+    radial-gradient(circle at 66%  880px, var(--b1) 0  58px, transparent  58px);
+  background-repeat:repeat-y;
+  background-size:
+    100% 1100px, 100% 1500px, 100%  900px, 100% 1300px,
+    100% 1700px, 100% 1000px, 100% 1900px, 100% 1200px;
 }
 
 /* ── Splash ── */
 #splash-page{
-  position:fixed;inset:0;background:#fff;
+  position:fixed;inset:0;background:transparent;
   display:flex;flex-direction:column;align-items:center;
   padding-top:32px;padding-left:20px;padding-right:20px;
   overflow:hidden;z-index:50;
@@ -279,10 +306,10 @@ body{
    PAGE 3 — Permanent Homepage
    Remove pages 1 & 2 on launch
    ══════════════════════════════════════ */
-#home-page{display:none;flex-direction:column;width:100%;background:#fff}
+#home-page{display:none;flex-direction:column;width:100%;background:transparent}
 /* padding-top and the 20px sides match #main-page / #thanks-page so the logo
    lands in the same place on every page. */
-.nav3{position:sticky;top:0;z-index:100;padding:32px 20px 12px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.nav3{position:sticky;top:0;z-index:100;padding:32px 20px 12px;display:flex;align-items:center;justify-content:center;background:rgba(255,252,230,0.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
 /* Must follow the rule above: the padding shorthand would otherwise win on
    source order. Tracks the same 640px step as #main-page / #thanks-page. */
 @media(min-width:640px){.nav3{padding-top:56px}}
@@ -348,7 +375,7 @@ body{
 .footer-fine{font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(3,2,19,.4);text-align:center;margin-top:10px}
 
 /* ── Footer ── */
-footer{background:#fff;border-top:1px solid #e5e7eb;padding:40px 24px;text-align:center}
+footer{background:transparent;border-top:1px solid #e5e7eb;padding:40px 24px;text-align:center}
 .footer-logo{width:100%;max-width:200px;margin-bottom:20px}
 .footer-links{display:flex;gap:20px;justify-content:center;flex-wrap:wrap;margin-bottom:20px}
 .footer-links a{font-size:12px;font-weight:500;color:#9ca3af;text-decoration:none}
@@ -857,7 +884,7 @@ function launchConfetti(){
   </nav>
 
 
-<section id="p3-hero" style="background:#fff">
+<section id="p3-hero">
   <div id="p3-hero-wrap">
     <div id="p3-hero-inner">
       <div id="p3-hero-text">
@@ -948,7 +975,7 @@ function launchConfetti(){
 </style>
 
 <!-- Groups -->
-<section style="background:#fff;border-top:1px solid #e5e7eb">
+<section style="border-top:1px solid #e5e7eb">
   <div class="p3-wrap">
     <p class="p3-eye reveal">Groups</p>
     <div class="p3-groups">
@@ -993,7 +1020,7 @@ function launchConfetti(){
 </section>
 
 <!-- Availability / Scheduling -->
-<section style="background:#fff;border-top:1px solid #e5e7eb">
+<section style="border-top:1px solid #e5e7eb">
   <div class="p3-wrap">
     <div class="p3-groups">
       <div class="p3-sched-cards">
@@ -1063,7 +1090,7 @@ function launchConfetti(){
   </div>
 </section>
 <!-- Sports -->
-<section style="background:#fff;border-top:1px solid #e5e7eb">
+<section style="border-top:1px solid #e5e7eb">
   <div class="p3-wrap">
     <div class="p3-sports">
       <div class="p3-sport pick reveal">
