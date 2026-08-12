@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.seesawlabs.swingerz",
+    "sha256_cert_fingerprints": ["BA:8F:91:B2:91:A5:C1:8C:D9:1F:C1:E6:7E:B8:F4:2E:58:3D:73:95:E5:02:FA:45:CD:C8:DC:6B:20:33:CE:99"]
+  }
+}]

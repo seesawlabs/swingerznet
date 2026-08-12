@@ -1,0 +1,18 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["HK86LL567B.com.seesawlabs.swingerz"],
+        "components": [
+          {
+            "/": "/invites*"
+          },
+          {
+            "/": "/*",
+            "exclude": true
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Join Group</title>
+</head>
+<body>
+  <h1>You've been invited!</h1>
+  <p>Tap below to copy your invite code and open the app.</p>
+
+  <button id="join-btn">Accept Invite & Open App</button>
+
+  <script>
+    // 1. Read 'code' from query parameters (?code=xxxxxxxx)
+    const urlParams = new URLSearchParams(window.location.search);
+    const inviteCode = urlParams.get('code');
+
+    const button = document.getElementById('join-btn');
+
+    if (!inviteCode) {
+      button.disabled = true;
+      button.innerText = 'Invalid Invite Link';
+    } else {
+      button.addEventListener('click', async () => {
+        try {
+          // 2. Format payload — must match CLIPBOARD_INVITE_PREFIX in
+          // src/app/_layout.tsx exactly, including the colon.
+          const payload = `SWINGERZ_INVITE:${inviteCode}`;
+
+          // 3. Write payload to clipboard
+          await navigator.clipboard.writeText(payload);
+
+          // 4. Detect OS and redirect to appropriate app store
+          const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+          if (isIOS) {
+            // TODO: fill in the numeric App Store id once published.
+            window.location.href = 'https://apps.apple.com/app/6793514887';
+          } else {
+            window.location.href = 'https://play.google.com/store/apps/details?id=com.seesawlabs.swingerz';
+          }
+        } catch (err) {
+          alert('Failed to copy code automatically. Please try again.');
+        }
+      });
+    }
+  </script>
+</body>
+</html>
