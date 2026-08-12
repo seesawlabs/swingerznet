@@ -48,7 +48,9 @@ body{
 
 /* ── Splash ── */
 #splash-page{
-  position:fixed;inset:0;background:transparent;
+  /* Opaque white: the ball animation spans 90vw, so the bokeh behind it
+     read as clutter rather than texture. This screen opts out entirely. */
+  position:fixed;inset:0;background:#fff;
   display:flex;flex-direction:column;align-items:center;
   padding-top:32px;padding-left:20px;padding-right:20px;
   overflow:hidden;z-index:50;
@@ -352,7 +354,9 @@ body{
 .footer-fine{font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(3,2,19,.4);text-align:center;margin-top:10px}
 
 /* ── Footer ── */
-footer{background:transparent;border-top:1px solid #e5e7eb;padding:40px 24px;text-align:center}
+/* Divider is drawn below with the other band-width rules, not as a border,
+   so it stops at the column edge instead of crossing the bokeh margins. */
+footer{background:transparent;padding:40px 24px;text-align:center}
 .footer-logo{width:100%;max-width:200px;margin-bottom:20px}
 .footer-links{display:flex;gap:20px;justify-content:center;flex-wrap:wrap;margin-bottom:20px}
 .footer-links a{font-size:12px;font-weight:500;color:#9ca3af;text-decoration:none}
@@ -684,17 +688,38 @@ function startPhysBall(){
   var lr=logoEl.getBoundingClientRect();
   var R=Math.round(lr.width*0.03116);
   dot.style.width=dot.style.height=(R*2)+'px';
-  dot.style.display='block';
 
   var G=900,BOUNCE=0.62,SETTLE=80,MAX=500,EDGE=0.25,BOT=0.45,CR=22;
   var SLIDE_FRICTION=0.88; // vx multiplier per frame at 60fps
   var phase='falling'; // 'falling' | 'sliding'
 
-  var vw0=window.innerWidth;
-  var x=vw0*(0.35+Math.random()*.3),y=-(R+10);
+  /* The ball bounces off the white column, not the viewport. Width is measured
+     from --band via a throwaway probe so any CSS expression resolves, and the
+     breakpoint stays defined in one place. Cached per viewport width. */
+  var _bandW=null,_bandVw=null;
+  function bandWidth(){
+    var vw=window.innerWidth;
+    if(_bandVw===vw)return _bandW;
+    var probe=document.createElement('div');
+    probe.style.cssText='position:absolute;visibility:hidden;height:0;width:var(--band)';
+    mainPage.appendChild(probe);
+    _bandW=Math.min(probe.offsetWidth||vw,vw);
+    mainPage.removeChild(probe);
+    _bandVw=vw;
+    return _bandW;
+  }
+
+  var vw0=window.innerWidth,bw0=bandWidth();
+  var x=(vw0-bw0)/2+bw0*(0.2+Math.random()*.6),y=-(R+10);
   var vx=(Math.random()<.5?1:-1)*(180+Math.random()*120);
   var vy=80+Math.random()*60;
   var last=null,done=false,botBounces=0;
+
+  /* Position before revealing. The first tick only records a timestamp, so
+     showing the ball any earlier flashes it at the element's default corner -
+     outside the white column, which is exactly where it should never appear. */
+  dot.style.left=(x-R)+'px';dot.style.top=(y-R)+'px';
+  dot.style.display='block';
 
   function tick(now){
     if(done)return;
@@ -727,8 +752,9 @@ function startPhysBall(){
       // Falling phase
       vy+=G*dt;x+=vx*dt;y+=vy*dt;
 
-      if(x-R<0){x=R;vx=Math.abs(vx)*EDGE;}
-      if(x+R>vw){x=vw-R;vx=-Math.abs(vx)*EDGE;}
+      var bw=bandWidth(),wallL=(vw-bw)/2,wallR=(vw+bw)/2;
+      if(x-R<wallL){x=wallL+R;vx=Math.abs(vx)*EDGE;}
+      if(x+R>wallR){x=wallR-R;vx=-Math.abs(vx)*EDGE;}
 
       // Logo yellow stripe bounce
       var lr2=logoEl.getBoundingClientRect();
@@ -966,6 +992,21 @@ function launchConfetti(){
    Everything lives in this one block: the discs go on body, and each screen
    paints a centred white band over them so the type always sits on white.
    Bands are gradients rather than wrapper elements, so no markup changes. */
+/* --band is the single source of truth for the column: the white background,
+   the section dividers and the bouncing ball's walls all derive from it.
+   100% below the breakpoint, so nothing looks inset when the bokeh is off. */
+#main-page,#thanks-page,#home-page{--band:100%}
+
+/* Dividers as a centred background line rather than a border, so they stop at
+   the column edge instead of running the full viewport across the margins. */
+#home-page > section:not(:first-of-type),
+#home-page > footer{
+  background-image:linear-gradient(#e5e7eb,#e5e7eb);
+  background-repeat:no-repeat;
+  background-position:top center;
+  background-size:var(--band) 1px;
+}
+
 @media(min-width:1280px){
   body{
     --b1:rgba(255,242,0,.55);
@@ -985,13 +1026,15 @@ function launchConfetti(){
       100% 1100px, 100% 1500px, 100%  900px, 100% 1300px,
       100% 1700px, 100% 1000px, 100% 1900px, 100% 1200px;
   }
-  /* Signup and thanks share one 640px band so the column does not jump width
-     when the screens swap. The homepage matches its own 960px wrap. */
-  #main-page,#thanks-page{
-    background:linear-gradient(#fff,#fff) center/640px 100% no-repeat;
-  }
-  #home-page,.nav3{
-    background:linear-gradient(#fff,#fff) center/960px 100% no-repeat;
+  /* Signup and thanks share one width so the column does not jump when the
+     screens swap. */
+  #main-page,#thanks-page{--band:640px}
+  /* The homepage column grows with the viewport but always leaves 160px of
+     bokeh either side, so the discs never thin to a sliver at the breakpoint.
+     At 1280 that resolves to 960px, reaching its 1120px cap at 1440. */
+  #home-page{--band:min(1120px,100% - 320px)}
+  #main-page,#thanks-page,#home-page,.nav3{
+    background:linear-gradient(#fff,#fff) center/var(--band) 100% no-repeat;
   }
   /* The nav's blur would frost the bokeh margins either side of the column. */
   .nav3{backdrop-filter:none;-webkit-backdrop-filter:none}
@@ -999,7 +1042,7 @@ function launchConfetti(){
 </style>
 
 <!-- Groups -->
-<section style="border-top:1px solid #e5e7eb">
+<section>
   <div class="p3-wrap">
     <p class="p3-eye reveal">Groups</p>
     <div class="p3-groups">
@@ -1044,7 +1087,7 @@ function launchConfetti(){
 </section>
 
 <!-- Availability / Scheduling -->
-<section style="border-top:1px solid #e5e7eb">
+<section>
   <div class="p3-wrap">
     <div class="p3-groups">
       <div class="p3-sched-cards">
@@ -1114,7 +1157,7 @@ function launchConfetti(){
   </div>
 </section>
 <!-- Sports -->
-<section style="border-top:1px solid #e5e7eb">
+<section>
   <div class="p3-wrap">
     <div class="p3-sports">
       <div class="p3-sport pick reveal">
