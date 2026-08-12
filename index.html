@@ -99,6 +99,11 @@ body{
   min-height:100dvh;
   padding:32px 20px 60px;
   width:100%;
+  /* White column behind the type, bokeh left in the margins. Painted as a
+     centred gradient band rather than a wrapper element so no markup changes.
+     320px content + 24px either side; the min() keeps a bokeh margin on
+     phones instead of letting the band cover the whole screen. */
+  background:linear-gradient(#fff,#fff) center/min(368px,100% - 32px) 100% no-repeat;
 }
 /* Page 1 is width-invariant: same single-column layout at every breakpoint. */
 #main-mobile-logo{display:block;width:100%;max-width:320px;margin-bottom:28px;}
@@ -195,6 +200,7 @@ body{
   min-height:100dvh;
   padding:32px 20px 60px;
   max-width:480px;margin:0 auto;
+  background:linear-gradient(#fff,#fff) center/min(480px,100% - 32px) 100% no-repeat;
 }
 #thanks-logo{width:100%;max-width:320px;margin-bottom:28px;}
 .thanks-headline{
@@ -306,10 +312,13 @@ body{
    PAGE 3 — Permanent Homepage
    Remove pages 1 & 2 on launch
    ══════════════════════════════════════ */
-#home-page{display:none;flex-direction:column;width:100%;background:transparent}
+/* One band for the whole homepage, so the hero, every section and the footer
+   share a single continuous white column with bokeh either side. */
+#home-page{display:none;flex-direction:column;width:100%;
+  background:linear-gradient(#fff,#fff) center/min(960px,100% - 32px) 100% no-repeat}
 /* padding-top and the 20px sides match #main-page / #thanks-page so the logo
    lands in the same place on every page. */
-.nav3{position:sticky;top:0;z-index:100;padding:32px 20px 12px;display:flex;align-items:center;justify-content:center;background:rgba(255,252,230,0.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.nav3{position:sticky;top:0;z-index:100;padding:32px 20px 12px;display:flex;align-items:center;justify-content:center;background:linear-gradient(#fff,#fff) center/min(960px,100% - 32px) 100% no-repeat}
 /* Must follow the rule above: the padding shorthand would otherwise win on
    source order. Tracks the same 640px step as #main-page / #thanks-page. */
 @media(min-width:640px){.nav3{padding-top:56px}}
