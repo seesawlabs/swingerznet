@@ -177,7 +177,7 @@ canvas:focus-visible{outline:3px solid #fff200;outline-offset:3px}
      so the same code is correct at any size or pixel ratio. */
   var W = 720, H = 420;
 
-  var PADDLE_H = 78, PADDLE_W = 12, PADDLE_INSET = 22;
+  var PADDLE_H = 78, PADDLE_W = 12, PADDLE_INSET = 12;
   var BALL_R = 23;
   var SPEED_START = 330, SPEED_MAX = 760, SPEED_GAIN = 26;
   var PLAYER_KEY_SPEED = 680;
@@ -373,10 +373,12 @@ canvas:focus-visible{outline:3px solid #fff200;outline-offset:3px}
   fit();
 
   /* ── Input ──
-     On touch the finger sits at the paddle's bottom edge, so the whole
-     paddle is above the thumb and stays visible. The offset is exactly half
-     the paddle height - the smallest shift that clears it, which keeps the
-     control feeling close to direct.
+     On touch the paddle rides up and to the left of the thumb. Vertically it
+     is half the paddle height - which lands the finger on its bottom edge -
+     plus TOUCH_DROP of clear space below that. Horizontally the paddle is
+     pinned to the wall, so that separation is a fixed position rather than a
+     tracking offset: PADDLE_INSET sets how tightly it hugs the left edge, and
+     everything to its right is free for the thumb.
 
      pointerdown captures the pointer so a drag keeps being delivered once the
      finger leaves the canvas. That matters here: with the paddle held above
@@ -384,6 +386,9 @@ canvas:focus-visible{outline:3px solid #fff200;outline-offset:3px}
      the very bottom edge, and chasing it further is natural.
 
      Mouse and pen are precise and do not occlude, so they stay one to one. */
+  /* Clear space between the paddle's bottom edge and the touch point, on top
+     of the half-paddle that gets the finger to that edge in the first place. */
+  var TOUCH_DROP = 34;
   var dragging = false;
 
   function localY(clientY){
@@ -392,7 +397,7 @@ canvas:focus-visible{outline:3px solid #fff200;outline-offset:3px}
   }
   function aim(e){
     var y = localY(e.clientY);
-    return e.pointerType === 'touch' ? y - PADDLE_H/2 : y;
+    return e.pointerType === 'touch' ? y - (PADDLE_H/2 + TOUCH_DROP) : y;
   }
 
   cv.addEventListener('pointermove', function(e){
