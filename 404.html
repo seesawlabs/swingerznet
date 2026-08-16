@@ -146,10 +146,10 @@ canvas:focus-visible{outline:3px solid #fff200;outline-offset:3px}
   var W = 720, H = 420;
 
   var PADDLE_H = 78, PADDLE_W = 12, PADDLE_INSET = 22;
-  var BALL_R = 19;                 // small enough to be a ball, not a beach ball
+  var BALL_R = 23;
   var SPEED_START = 330, SPEED_MAX = 760, SPEED_GAIN = 26;
-  var PLAYER_KEY_SPEED = 470;
-  var CPU_SPEED = 340;          // deliberately beatable
+  var PLAYER_KEY_SPEED = 680;
+  var CPU_SPEED = 440;          // quicker, but still short of the ball at full pace
   var WIN_SCORE = 7;
 
   var imgs = FACES.map(function(src){ var i = new Image(); i.src = src; return i; });
@@ -214,7 +214,7 @@ canvas:focus-visible{outline:3px solid #fff200;outline-offset:3px}
 
     // Player paddle: pointer wins if present, otherwise keys.
     if (pointerY !== null) {
-      state.player += (pointerY - state.player) * Math.min(1, dt*18);
+      state.player += (pointerY - state.player) * Math.min(1, dt*30);
     } else {
       var d = 0;
       if (keys.up) d -= 1;
@@ -232,6 +232,7 @@ canvas:focus-visible{outline:3px solid #fff200;outline-offset:3px}
 
     if (!b.live) return;
 
+    var prevX = b.x;
     b.x += b.vx * dt;
     b.y += b.vy * dt;
     b.spin += b.vx * dt * 0.012;
@@ -240,16 +241,20 @@ canvas:focus-visible{outline:3px solid #fff200;outline-offset:3px}
     if (b.y - BALL_R < 0)      { b.y = BALL_R;     b.vy = Math.abs(b.vy); }
     if (b.y + BALL_R > H)      { b.y = H - BALL_R; b.vy = -Math.abs(b.vy); }
 
-    // Paddles
+    /* Paddles, tested as a sweep rather than "is the ball near the paddle
+       now". At full pace on a slow frame the ball covers more ground in one
+       step than the paddle is thick, so a proximity test can miss entirely
+       and the ball passes straight through. Asking whether it crossed the
+       plane between the previous position and this one cannot be outrun. */
     var px = PADDLE_INSET + PADDLE_W;
-    if (b.vx < 0 && b.x - BALL_R <= px && b.x - BALL_R > px - 26) {
+    if (b.vx < 0 && prevX - BALL_R > px && b.x - BALL_R <= px) {
       if (Math.abs(b.y - state.player) <= PADDLE_H/2 + BALL_R*0.6) {
         b.x = px + BALL_R;
         bounceOffPaddle(b, state.player, 1);
       }
     }
     var qx = W - PADDLE_INSET - PADDLE_W;
-    if (b.vx > 0 && b.x + BALL_R >= qx && b.x + BALL_R < qx + 26) {
+    if (b.vx > 0 && prevX + BALL_R < qx && b.x + BALL_R >= qx) {
       if (Math.abs(b.y - state.cpuY) <= PADDLE_H/2 + BALL_R*0.6) {
         b.x = qx - BALL_R;
         bounceOffPaddle(b, state.cpuY, -1);
