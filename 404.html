@@ -335,19 +335,45 @@ canvas:focus-visible{outline:3px solid #fff200;outline-offset:3px}
   window.addEventListener('resize', fit);
   fit();
 
-  /* ── Input ── */
+  /* ── Input ──
+     Touch rides above the finger. A fingertip is far wider than a cursor, so
+     tracking it exactly puts the thumb on top of the paddle - the one thing
+     you need to watch. TOUCH_LIFT sits the paddle clear of it.
+
+     The bottom of the court would be out of reach if the finger had to stay
+     on the canvas, so pointerdown captures the pointer: the drag keeps being
+     delivered after the finger moves off the bottom edge, which is where it
+     naturally goes when chasing a low ball. Mouse and pen are precise and do
+     not occlude, so they track one to one. */
+  var TOUCH_LIFT = 86;
+  var dragging = false;
+
   function localY(clientY){
     var r = cv.getBoundingClientRect();
     return (clientY - r.top) / r.height * H;
   }
+  function aim(e){
+    var y = localY(e.clientY);
+    return e.pointerType === 'touch' ? y - TOUCH_LIFT : y;
+  }
+
   cv.addEventListener('pointermove', function(e){
-    pointerY = localY(e.clientY);
+    if (e.pointerType === 'touch' && !dragging) return;   // no hover on touch
+    pointerY = aim(e);
   });
-  cv.addEventListener('pointerleave', function(){ pointerY = null; });
   cv.addEventListener('pointerdown', function(e){
-    cv.setPointerCapture && cv.setPointerCapture(e.pointerId);
-    pointerY = localY(e.clientY);
+    dragging = true;
+    if (cv.setPointerCapture) { try { cv.setPointerCapture(e.pointerId); } catch(err){} }
+    pointerY = aim(e);
     if (state.phase !== 'playing') start();
+  });
+  function endDrag(){ dragging = false; }
+  cv.addEventListener('pointerup', endDrag);
+  cv.addEventListener('pointercancel', endDrag);
+  /* Only give up tracking when a real cursor leaves; during a captured touch
+     drag the finger is expected to travel outside the canvas. */
+  cv.addEventListener('pointerleave', function(e){
+    if (e.pointerType !== 'touch' && !dragging) pointerY = null;
   });
 
   window.addEventListener('keydown', function(e){
