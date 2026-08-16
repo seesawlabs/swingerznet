@@ -373,23 +373,27 @@ canvas:focus-visible{outline:3px solid #fff200;outline-offset:3px}
   fit();
 
   /* ── Input ──
-     The paddle is pinned to the left edge, so the separation from the finger
-     is horizontal: rest a thumb anywhere to the right of it and the paddle
-     stays visible. Because the gap is sideways rather than vertical, no Y
-     compensation is needed and touch tracks one to one, which reads as
-     direct - a vertical lift traded that away for clearance the layout
-     already provides.
+     On touch the finger sits at the paddle's bottom edge, so the whole
+     paddle is above the thumb and stays visible. The offset is exactly half
+     the paddle height - the smallest shift that clears it, which keeps the
+     control feeling close to direct.
 
-     pointerdown still captures the pointer so a drag keeps being delivered
-     once the finger leaves the canvas, which is where it goes when chasing a
-     ball into a corner. */
+     pointerdown captures the pointer so a drag keeps being delivered once the
+     finger leaves the canvas. That matters here: with the paddle held above
+     the touch point, putting it on the floor of the court needs the finger at
+     the very bottom edge, and chasing it further is natural.
+
+     Mouse and pen are precise and do not occlude, so they stay one to one. */
   var dragging = false;
 
   function localY(clientY){
     var r = cv.getBoundingClientRect();
     return (clientY - r.top) / r.height * H;
   }
-  function aim(e){ return localY(e.clientY); }
+  function aim(e){
+    var y = localY(e.clientY);
+    return e.pointerType === 'touch' ? y - PADDLE_H/2 : y;
+  }
 
   cv.addEventListener('pointermove', function(e){
     if (e.pointerType === 'touch' && !dragging) return;   // no hover on touch
