@@ -100,6 +100,38 @@ canvas:focus-visible{outline:3px solid #fff200;outline-offset:3px}
   .court-wrap{margin-top:16px}
   .hint{font-size:11px}
 }
+
+/* ── Landscape phones ──
+   Short and wide: stacked, the court alone is taller than the viewport and
+   everything below it falls off the bottom. Go two-column - copy on the left,
+   court on the right - and size the court from the height that is actually
+   left rather than from the width, which there is plenty of. Placement is by
+   grid area so the markup order stays correct for portrait and screen
+   readers. */
+@media(orientation:landscape) and (max-height:560px){
+  body{padding:10px 16px;justify-content:center}
+  main{
+    display:grid;
+    grid-template-columns:auto minmax(0,1fr);
+    column-gap:24px;
+    align-items:center;
+    max-width:none;text-align:left;
+  }
+  .code{grid-area:1/1;font-size:clamp(30px,11vh,56px)}
+  h1{grid-area:2/1;font-size:clamp(14px,4.4vh,21px);margin-top:2px}
+  .sub{grid-area:3/1;font-size:clamp(11px,3vh,14px);margin-top:6px;max-width:34ch}
+  .home{grid-area:4/1;justify-self:start;margin-top:12px;padding:9px 18px;font-size:13px}
+  /* Cap by height so the whole court is on screen; the aspect ratio then
+     decides the width. 1.714 is 720/420. */
+  .court-wrap{
+    grid-area:1/2/5/3;
+    margin:0;
+    width:100%;
+    max-width:min(720px, calc((100dvh - 58px) * 1.714));
+    justify-self:end;
+  }
+  .hint{grid-area:5/2/6/3;justify-self:end;margin-top:6px;font-size:10px}
+}
 </style>
 </head>
 <body>
@@ -341,26 +373,23 @@ canvas:focus-visible{outline:3px solid #fff200;outline-offset:3px}
   fit();
 
   /* ── Input ──
-     Touch rides above the finger. A fingertip is far wider than a cursor, so
-     tracking it exactly puts the thumb on top of the paddle - the one thing
-     you need to watch. TOUCH_LIFT sits the paddle clear of it.
+     The paddle is pinned to the left edge, so the separation from the finger
+     is horizontal: rest a thumb anywhere to the right of it and the paddle
+     stays visible. Because the gap is sideways rather than vertical, no Y
+     compensation is needed and touch tracks one to one, which reads as
+     direct - a vertical lift traded that away for clearance the layout
+     already provides.
 
-     The bottom of the court would be out of reach if the finger had to stay
-     on the canvas, so pointerdown captures the pointer: the drag keeps being
-     delivered after the finger moves off the bottom edge, which is where it
-     naturally goes when chasing a low ball. Mouse and pen are precise and do
-     not occlude, so they track one to one. */
-  var TOUCH_LIFT = 86;
+     pointerdown still captures the pointer so a drag keeps being delivered
+     once the finger leaves the canvas, which is where it goes when chasing a
+     ball into a corner. */
   var dragging = false;
 
   function localY(clientY){
     var r = cv.getBoundingClientRect();
     return (clientY - r.top) / r.height * H;
   }
-  function aim(e){
-    var y = localY(e.clientY);
-    return e.pointerType === 'touch' ? y - TOUCH_LIFT : y;
-  }
+  function aim(e){ return localY(e.clientY); }
 
   cv.addEventListener('pointermove', function(e){
     if (e.pointerType === 'touch' && !dragging) return;   // no hover on touch
