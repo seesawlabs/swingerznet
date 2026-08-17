@@ -125,8 +125,8 @@ canvas:focus-visible{outline:3px solid #fff200;outline-offset:3px}
     align-items:center;
     max-width:none;text-align:left;
   }
-  .code{grid-area:1/1;font-size:clamp(30px,11vh,56px)}
-  h1{grid-area:2/1;font-size:clamp(14px,4.4vh,21px);margin-top:2px}
+  h1{grid-area:1/1;font-size:clamp(14px,4.4vh,21px)}
+  .code{grid-area:2/1;font-size:clamp(30px,11vh,56px);margin-top:2px}
   .sub{grid-area:3/1;font-size:clamp(11px,3vh,14px);margin-top:6px;max-width:34ch}
   .home{grid-area:4/1;justify-self:start;margin-top:12px;padding:9px 18px;font-size:13px}
   /* Cap by height so the whole court is on screen; the aspect ratio then
@@ -146,18 +146,18 @@ canvas:focus-visible{outline:3px solid #fff200;outline-offset:3px}
 </head>
 <body>
 <main>
-  <div class="code">Love-404</div>
   <h1>Unforced error.</h1>
-  <p class="sub">We shanked that one wide. No page here &mdash; but the court&rsquo;s open. First to 7.</p>
+  <div class="code">Love-404</div>
+  <p class="sub">No page here &mdash; but the court&rsquo;s free.</p>
 
   <div class="pad" id="pad">
     <div class="court-wrap">
     <canvas id="court" width="720" height="420" tabindex="0"
             aria-label="Tennis rally game. Use arrow keys or W and S to move your paddle."></canvas>
     <div class="overlay" id="overlay">
-      <div class="big" id="ov-title">Care for a hit?</div>
+      <div class="big" id="ov-title">Serve it up?</div>
       <div class="small" id="ov-sub">First to 7</div>
-      <button class="serve-btn" id="serve">Serve</button>
+      <button class="serve-btn" id="serve">Game on</button>
     </div>
     </div>
   </div>
