@@ -609,7 +609,21 @@ function launchConfetti(){
     background-size:
       100% 1100px, 100% 1500px, 100%  900px, 100% 1300px,
       100% 1700px, 100% 1000px, 100% 1900px, 100% 1200px;
+    /* Drift. Each layer travels exactly its own tile height, so every one
+       lands back on an identical pattern and the loop is invisible - and
+       because the tile heights all differ, one shared duration gives each
+       layer its own speed. Roughly 9-16px a second: read as depth, not as
+       something moving. */
+    animation:bokehDrift 120s linear infinite;
   }
+  @keyframes bokehDrift{
+    from{background-position:0 0,0 0,0 0,0 0,0 0,0 0,0 0,0 0}
+    to{background-position:
+        0 -1100px, 0 -1500px, 0  -900px, 0 -1300px,
+        0 -1700px, 0 -1000px, 0 -1900px, 0 -1200px}
+  }
+  /* Hold still for anyone who has asked their system for less movement. */
+  @media(prefers-reduced-motion:reduce){body{animation:none}}
   /* Signup and thanks share one width so the column does not jump when the
      screens swap. */
   #main-page,#thanks-page{--band:640px}
