@@ -61,7 +61,8 @@ h1{
 }
 
 /* ── Court ── */
-.court-wrap{position:relative;margin:22px auto 0;width:100%;max-width:720px}
+.pad{position:relative;margin:22px auto 0;width:100%;max-width:720px;touch-action:none}
+.court-wrap{position:relative;width:100%;margin:0 0 0 auto}
 canvas{
   display:block;width:100%;aspect-ratio:720/420;
   background:rgba(0,0,0,.16);
@@ -100,7 +101,11 @@ canvas:focus-visible{outline:3px solid #fff200;outline-offset:3px}
 .home:focus-visible{outline:3px solid #fff;outline-offset:2px}
 
 @media(max-width:520px){
-  .court-wrap{margin-top:16px}
+  .pad{margin-top:16px}
+  /* Narrow the court and pin it right. The strip this frees on the left is
+     part of the pad, so it still drives the paddle - a thumb can sit beside
+     the court instead of on top of the thing it is steering. */
+  .court-wrap{width:calc(100% - 68px)}
   .hint{font-size:11px}
 }
 
@@ -126,13 +131,15 @@ canvas:focus-visible{outline:3px solid #fff200;outline-offset:3px}
   .home{grid-area:4/1;justify-self:start;margin-top:12px;padding:9px 18px;font-size:13px}
   /* Cap by height so the whole court is on screen; the aspect ratio then
      decides the width. 1.714 is 720/420. */
-  .court-wrap{
+  .pad{
     grid-area:1/2/5/3;
     margin:0;
     width:100%;
     max-width:min(720px, calc((100dvh - 58px) * 1.714));
     justify-self:end;
   }
+  /* Landscape already leaves the whole left column free for a thumb. */
+  .court-wrap{width:100%}
   .hint{grid-area:5/2/6/3;justify-self:end;margin-top:6px;font-size:10px}
 }
 </style>
@@ -143,13 +150,15 @@ canvas:focus-visible{outline:3px solid #fff200;outline-offset:3px}
   <h1>Unforced error.</h1>
   <p class="sub">We shanked that one wide. No page here &mdash; but the court&rsquo;s open. First to 7.</p>
 
-  <div class="court-wrap">
+  <div class="pad" id="pad">
+    <div class="court-wrap">
     <canvas id="court" width="720" height="420" tabindex="0"
             aria-label="Tennis rally game. Use arrow keys or W and S to move your paddle."></canvas>
     <div class="overlay" id="overlay">
       <div class="big" id="ov-title">Care for a hit?</div>
       <div class="small" id="ov-sub">First to 7</div>
       <button class="serve-btn" id="serve">Serve</button>
+    </div>
     </div>
   </div>
   <p class="hint">Paddle &mdash; drag, arrow keys or W/S</p>
@@ -174,6 +183,9 @@ canvas:focus-visible{outline:3px solid #fff200;outline-offset:3px}
   var cv = document.getElementById('court');
   if (!cv || !cv.getContext) return;
   var ctx = cv.getContext('2d');
+  /* Input lands on the pad, not the canvas: on phones the court is inset from
+     the left and the strip beside it has to steer too. */
+  var pad = document.getElementById('pad');
 
   /* Logical court units. Everything below is written in these, and the
      canvas transform maps them onto whatever device pixels we end up with,
@@ -191,26 +203,45 @@ canvas:focus-visible{outline:3px solid #fff200;outline-offset:3px}
 
   var state, keys = {}, pointerY = null;
 
+  /* A new ball joins every EXTRA_EVERY paddle contacts within a point. The
+     count resets with the point, so the court clears rather than compounding
+     forever. */
+  var EXTRA_EVERY = 10;
+
   function reset(full){
     if (full) state = { you:0, cpu:0, phase:'ready', rally:0, best:0 };
     state.phase = state.phase === 'over' ? 'over' : state.phase;
     state.player = H/2;
     state.cpuY = H/2;
     state.rally = 0;
-    state.ball = { x:W/2, y:H/2, vx:0, vy:0, spin:0, face:0, live:false };
+    state.balls = [];
   }
   reset(true);
 
-  function serve(toPlayer){
-    var b = state.ball;
-    b.x = W/2; b.y = H/2;
+  function makeBall(dir, y, speed){
     var ang = (Math.random()*0.5 - 0.25);           // shallow opening angle
-    var dir = toPlayer ? -1 : 1;
-    b.vx = dir * SPEED_START * Math.cos(ang);
-    b.vy = SPEED_START * Math.sin(ang);
-    b.live = true;
-    b.face = (Math.random()*imgs.length)|0;
+    var sp = speed || SPEED_START;
+    return {
+      x: W/2, y: y === undefined ? H/2 : y,
+      vx: dir * sp * Math.cos(ang),
+      vy: sp * Math.sin(ang),
+      spin: 0,
+      face: (Math.random()*imgs.length)|0
+    };
+  }
+
+  function serve(toPlayer){
+    state.balls = [ makeBall(toPlayer ? -1 : 1) ];
     state.rally = 0;
+  }
+
+  /* Extra balls enter from the middle, away from the one already in play so
+     they do not appear already overlapping it, and head toward whoever is
+     further from the centre line - which is usually whoever just hit. */
+  function addBall(){
+    var y = 60 + Math.random() * (H - 120);
+    var dir = Math.random() < 0.5 ? -1 : 1;
+    state.balls.push(makeBall(dir, y, SPEED_START * 0.92));
   }
 
   function speedOf(b){ return Math.hypot(b.vx, b.vy); }
@@ -227,11 +258,12 @@ canvas:focus-visible{outline:3px solid #fff200;outline-offset:3px}
     b.face = (b.face + 1) % imgs.length;             // change expression on contact
     state.rally++;
     if (state.rally > state.best) state.best = state.rally;
+    if (state.rally % EXTRA_EVERY === 0) addBall();
   }
 
   function point(who){
     state[who]++;
-    state.ball.live = false;
+    state.balls = [];
     if (state.you >= WIN_SCORE || state.cpu >= WIN_SCORE) {
       state.phase = 'over';
       showOverlay(
@@ -244,8 +276,29 @@ canvas:focus-visible{outline:3px solid #fff200;outline-offset:3px}
     }
   }
 
+  /* Equal-mass elastic bounce between two balls: push them apart so they are
+     just touching, then swap the components of their velocities along the line
+     joining them. Everything perpendicular to that line is untouched, which is
+     what makes the deflection look right rather than merely different. */
+  function collideBalls(a, c){
+    var dx = c.x - a.x, dy = c.y - a.y;
+    var d = Math.hypot(dx, dy), min = BALL_R * 2;
+    if (d >= min) return;
+    if (d === 0) { c.x += 0.01; return; }          // exactly coincident: nudge
+    var nx = dx/d, ny = dy/d, push = (min - d) / 2;
+    a.x -= nx*push; a.y -= ny*push;
+    c.x += nx*push; c.y += ny*push;
+    var av = a.vx*nx + a.vy*ny;
+    var cvv = c.vx*nx + c.vy*ny;
+    var diff = cvv - av;
+    a.vx += diff*nx; a.vy += diff*ny;
+    c.vx -= diff*nx; c.vy -= diff*ny;
+  }
+
   function step(dt){
-    var b = state.ball;
+    /* The CPU and the spin both need a reference ball; use the one closest to
+       whichever side is being considered. */
+    var b = state.balls[0];
 
     // Player paddle: pointer wins if present, otherwise keys.
     if (pointerY !== null) {
@@ -258,47 +311,70 @@ canvas:focus-visible{outline:3px solid #fff200;outline-offset:3px}
     }
     state.player = Math.max(PADDLE_H/2, Math.min(H - PADDLE_H/2, state.player));
 
-    // CPU tracks the ball, but only while it is coming toward it, and with a
-    // capped speed - otherwise it is unbeatable and the joke falls flat.
-    var target = b.vx > 0 ? b.y : H/2;
+    /* CPU tracks whichever incoming ball will reach it first, and only while
+       something is actually coming, with a capped speed - otherwise it is
+       unbeatable and the joke falls flat. */
+    var target = H/2, soonest = Infinity;
+    for (var ci = 0; ci < state.balls.length; ci++) {
+      var cb = state.balls[ci];
+      if (cb.vx <= 0) continue;
+      var eta = (W - cb.x) / cb.vx;
+      if (eta < soonest) { soonest = eta; target = cb.y; }
+    }
     var diff = target - state.cpuY;
     var move = Math.max(-CPU_SPEED*dt, Math.min(CPU_SPEED*dt, diff));
     state.cpuY = Math.max(PADDLE_H/2, Math.min(H - PADDLE_H/2, state.cpuY + move));
 
-    if (!b.live) return;
+    if (!state.balls.length) return;
 
-    var prevX = b.x;
-    b.x += b.vx * dt;
-    b.y += b.vy * dt;
-    b.spin += b.vx * dt * 0.012;
+    for (var i = 0; i < state.balls.length; i++) {
+      b = state.balls[i];
+      var prevX = b.x;
+      b.x += b.vx * dt;
+      b.y += b.vy * dt;
+      b.spin += b.vx * dt * 0.012;
 
-    // Walls
-    if (b.y - BALL_R < 0)      { b.y = BALL_R;     b.vy = Math.abs(b.vy); }
-    if (b.y + BALL_R > H)      { b.y = H - BALL_R; b.vy = -Math.abs(b.vy); }
+      // Walls
+      if (b.y - BALL_R < 0)      { b.y = BALL_R;     b.vy = Math.abs(b.vy); }
+      if (b.y + BALL_R > H)      { b.y = H - BALL_R; b.vy = -Math.abs(b.vy); }
 
     /* Paddles, tested as a sweep rather than "is the ball near the paddle
        now". At full pace on a slow frame the ball covers more ground in one
        step than the paddle is thick, so a proximity test can miss entirely
        and the ball passes straight through. Asking whether it crossed the
        plane between the previous position and this one cannot be outrun. */
-    var px = PADDLE_INSET + PADDLE_W;
-    if (b.vx < 0 && prevX - BALL_R > px && b.x - BALL_R <= px) {
-      if (Math.abs(b.y - state.player) <= PADDLE_H/2 + BALL_R*0.6) {
-        b.x = px + BALL_R;
-        bounceOffPaddle(b, state.player, 1);
+      var px = PADDLE_INSET + PADDLE_W;
+      if (b.vx < 0 && prevX - BALL_R > px && b.x - BALL_R <= px) {
+        if (Math.abs(b.y - state.player) <= PADDLE_H/2 + BALL_R*0.6) {
+          b.x = px + BALL_R;
+          bounceOffPaddle(b, state.player, 1);
+        }
       }
-    }
-    var qx = W - PADDLE_INSET - PADDLE_W;
-    if (b.vx > 0 && prevX + BALL_R < qx && b.x + BALL_R >= qx) {
-      if (Math.abs(b.y - state.cpuY) <= PADDLE_H/2 + BALL_R*0.6) {
-        b.x = qx - BALL_R;
-        bounceOffPaddle(b, state.cpuY, -1);
+      var qx = W - PADDLE_INSET - PADDLE_W;
+      if (b.vx > 0 && prevX + BALL_R < qx && b.x + BALL_R >= qx) {
+        if (Math.abs(b.y - state.cpuY) <= PADDLE_H/2 + BALL_R*0.6) {
+          b.x = qx - BALL_R;
+          bounceOffPaddle(b, state.cpuY, -1);
+        }
       }
     }
 
-    // Out
-    if (b.x + BALL_R < 0) point('cpu');
-    else if (b.x - BALL_R > W) point('you');
+    // Ball against ball, every pair once.
+    for (var m = 0; m < state.balls.length; m++) {
+      for (var n = m + 1; n < state.balls.length; n++) {
+        collideBalls(state.balls[m], state.balls[n]);
+      }
+    }
+
+    /* Any ball out ends the point. Decided after the whole court has moved so
+       two balls leaving on the same frame cannot score twice. */
+    var scored = null;
+    for (var k = 0; k < state.balls.length; k++) {
+      var ob = state.balls[k];
+      if (ob.x + BALL_R < 0)      { scored = 'cpu'; break; }
+      if (ob.x - BALL_R > W)      { scored = 'you'; break; }
+    }
+    if (scored) point(scored);
   }
 
   function roundRect(x,y,w,h,r){
@@ -336,16 +412,18 @@ canvas:focus-visible{outline:3px solid #fff200;outline-offset:3px}
     roundRect(W - PADDLE_INSET - PADDLE_W, state.cpuY - PADDLE_H/2, PADDLE_W, PADDLE_H, 6);
 
     // Ball
-    var b = state.ball, img = imgs[b.face];
-    if (img && img.complete && img.naturalWidth) {
-      ctx.save();
-      ctx.translate(b.x, b.y);
-      ctx.rotate(b.spin);
-      ctx.drawImage(img, -BALL_R, -BALL_R, BALL_R*2, BALL_R*2);
-      ctx.restore();
-    } else {
-      ctx.fillStyle = '#fff200';
-      ctx.beginPath(); ctx.arc(b.x, b.y, BALL_R, 0, Math.PI*2); ctx.fill();
+    for (var i = 0; i < state.balls.length; i++) {
+      var b = state.balls[i], img = imgs[b.face];
+      if (img && img.complete && img.naturalWidth) {
+        ctx.save();
+        ctx.translate(b.x, b.y);
+        ctx.rotate(b.spin);
+        ctx.drawImage(img, -BALL_R, -BALL_R, BALL_R*2, BALL_R*2);
+        ctx.restore();
+      } else {
+        ctx.fillStyle = '#fff200';
+        ctx.beginPath(); ctx.arc(b.x, b.y, BALL_R, 0, Math.PI*2); ctx.fill();
+      }
     }
   }
 
@@ -403,22 +481,22 @@ canvas:focus-visible{outline:3px solid #fff200;outline-offset:3px}
     return e.pointerType === 'touch' ? y - (PADDLE_H/2 + TOUCH_DROP) : y;
   }
 
-  cv.addEventListener('pointermove', function(e){
+  pad.addEventListener('pointermove', function(e){
     if (e.pointerType === 'touch' && !dragging) return;   // no hover on touch
     pointerY = aim(e);
   });
-  cv.addEventListener('pointerdown', function(e){
+  pad.addEventListener('pointerdown', function(e){
     dragging = true;
-    if (cv.setPointerCapture) { try { cv.setPointerCapture(e.pointerId); } catch(err){} }
+    if (pad.setPointerCapture) { try { pad.setPointerCapture(e.pointerId); } catch(err){} }
     pointerY = aim(e);
     if (state.phase !== 'playing') start();
   });
   function endDrag(){ dragging = false; }
-  cv.addEventListener('pointerup', endDrag);
-  cv.addEventListener('pointercancel', endDrag);
+  pad.addEventListener('pointerup', endDrag);
+  pad.addEventListener('pointercancel', endDrag);
   /* Only give up tracking when a real cursor leaves; during a captured touch
      drag the finger is expected to travel outside the canvas. */
-  cv.addEventListener('pointerleave', function(e){
+  pad.addEventListener('pointerleave', function(e){
     if (e.pointerType !== 'touch' && !dragging) pointerY = null;
   });
 
