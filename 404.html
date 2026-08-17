@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>404 &mdash; Long | Swingerz</title>
+<title>Love-404 | Swingerz</title>
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#146C34">
 <meta name="description" content="Page not found. The court's open if you fancy a hit.">
@@ -45,8 +45,11 @@ body::before{
 main{position:relative;z-index:1;width:100%;max-width:760px;text-align:center}
 
 .code{
-  font-size:clamp(64px,15vw,116px);font-weight:800;line-height:.92;
-  letter-spacing:-.04em;color:#fff200;
+  /* nowrap: "Love-404" would otherwise break at the hyphen on a 320px screen
+     and read as "Love-" over "404". The floor is set so it still fits on one
+     line there rather than relying on the wrap to rescue it. */
+  font-size:clamp(56px,14vw,116px);font-weight:800;line-height:.92;
+  letter-spacing:-.04em;color:#fff200;white-space:nowrap;
 }
 h1{
   font-size:clamp(21px,4.6vw,30px);font-weight:800;letter-spacing:-.02em;
@@ -136,7 +139,7 @@ canvas:focus-visible{outline:3px solid #fff200;outline-offset:3px}
 </head>
 <body>
 <main>
-  <div class="code">404</div>
+  <div class="code">Love-404</div>
   <h1>Unforced error.</h1>
   <p class="sub">We shanked that one wide. No page here &mdash; but the court&rsquo;s open. First to 7.</p>
 
@@ -145,7 +148,7 @@ canvas:focus-visible{outline:3px solid #fff200;outline-offset:3px}
             aria-label="Tennis rally game. Use arrow keys or W and S to move your paddle."></canvas>
     <div class="overlay" id="overlay">
       <div class="big" id="ov-title">Care for a hit?</div>
-      <div class="small" id="ov-sub">First to 7. Winner stays on.</div>
+      <div class="small" id="ov-sub">First to 7</div>
       <button class="serve-btn" id="serve">Serve</button>
     </div>
   </div>
