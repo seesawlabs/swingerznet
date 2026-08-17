@@ -203,11 +203,6 @@ canvas:focus-visible{outline:3px solid #fff200;outline-offset:3px}
 
   var state, keys = {}, pointerY = null;
 
-  /* A new ball joins every EXTRA_EVERY paddle contacts within a point. The
-     count resets with the point, so the court clears rather than compounding
-     forever. */
-  var EXTRA_EVERY = 10;
-
   function reset(full){
     if (full) state = { you:0, cpu:0, phase:'ready', rally:0, best:0 };
     state.phase = state.phase === 'over' ? 'over' : state.phase;
@@ -235,15 +230,6 @@ canvas:focus-visible{outline:3px solid #fff200;outline-offset:3px}
     state.rally = 0;
   }
 
-  /* Extra balls enter from the middle, away from the one already in play so
-     they do not appear already overlapping it, and head toward whoever is
-     further from the centre line - which is usually whoever just hit. */
-  function addBall(){
-    var y = 60 + Math.random() * (H - 120);
-    var dir = Math.random() < 0.5 ? -1 : 1;
-    state.balls.push(makeBall(dir, y, SPEED_START * 0.92));
-  }
-
   function speedOf(b){ return Math.hypot(b.vx, b.vy); }
 
   function bounceOffPaddle(b, paddleY, dir){
@@ -258,7 +244,6 @@ canvas:focus-visible{outline:3px solid #fff200;outline-offset:3px}
     b.face = (b.face + 1) % imgs.length;             // change expression on contact
     state.rally++;
     if (state.rally > state.best) state.best = state.rally;
-    if (state.rally % EXTRA_EVERY === 0) addBall();
   }
 
   function point(who){
@@ -276,28 +261,7 @@ canvas:focus-visible{outline:3px solid #fff200;outline-offset:3px}
     }
   }
 
-  /* Equal-mass elastic bounce between two balls: push them apart so they are
-     just touching, then swap the components of their velocities along the line
-     joining them. Everything perpendicular to that line is untouched, which is
-     what makes the deflection look right rather than merely different. */
-  function collideBalls(a, c){
-    var dx = c.x - a.x, dy = c.y - a.y;
-    var d = Math.hypot(dx, dy), min = BALL_R * 2;
-    if (d >= min) return;
-    if (d === 0) { c.x += 0.01; return; }          // exactly coincident: nudge
-    var nx = dx/d, ny = dy/d, push = (min - d) / 2;
-    a.x -= nx*push; a.y -= ny*push;
-    c.x += nx*push; c.y += ny*push;
-    var av = a.vx*nx + a.vy*ny;
-    var cvv = c.vx*nx + c.vy*ny;
-    var diff = cvv - av;
-    a.vx += diff*nx; a.vy += diff*ny;
-    c.vx -= diff*nx; c.vy -= diff*ny;
-  }
-
   function step(dt){
-    /* The CPU and the spin both need a reference ball; use the one closest to
-       whichever side is being considered. */
     var b = state.balls[0];
 
     // Player paddle: pointer wins if present, otherwise keys.
@@ -311,9 +275,8 @@ canvas:focus-visible{outline:3px solid #fff200;outline-offset:3px}
     }
     state.player = Math.max(PADDLE_H/2, Math.min(H - PADDLE_H/2, state.player));
 
-    /* CPU tracks whichever incoming ball will reach it first, and only while
-       something is actually coming, with a capped speed - otherwise it is
-       unbeatable and the joke falls flat. */
+    /* CPU only moves while the ball is actually coming at it, and with a
+       capped speed - otherwise it is unbeatable and the joke falls flat. */
     var target = H/2, soonest = Infinity;
     for (var ci = 0; ci < state.balls.length; ci++) {
       var cb = state.balls[ci];
@@ -359,15 +322,7 @@ canvas:focus-visible{outline:3px solid #fff200;outline-offset:3px}
       }
     }
 
-    // Ball against ball, every pair once.
-    for (var m = 0; m < state.balls.length; m++) {
-      for (var n = m + 1; n < state.balls.length; n++) {
-        collideBalls(state.balls[m], state.balls[n]);
-      }
-    }
-
-    /* Any ball out ends the point. Decided after the whole court has moved so
-       two balls leaving on the same frame cannot score twice. */
+    // Out ends the point.
     var scored = null;
     for (var k = 0; k < state.balls.length; k++) {
       var ob = state.balls[k];
