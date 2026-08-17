@@ -62,7 +62,7 @@ h1{
 
 /* ── Court ── */
 .pad{position:relative;margin:22px auto 0;width:100%;max-width:720px;touch-action:none}
-.court-wrap{position:relative;width:100%;margin:0 0 0 auto}
+.court-wrap{position:relative;width:100%;margin:0 auto}
 canvas{
   display:block;width:100%;aspect-ratio:720/420;
   background:rgba(0,0,0,.16);
@@ -102,7 +102,7 @@ canvas:focus-visible{outline:3px solid #fff200;outline-offset:3px}
 
 @media(max-width:520px){
   .pad{margin-top:16px}
-  /* Narrow the court and pin it right. The strip this frees on the left is
+  /* Narrow the court and centre it. The margin this frees either side is
      part of the pad, so it still drives the paddle - a thumb can sit beside
      the court instead of on top of the thing it is steering. */
   .court-wrap{width:calc(100% - 68px)}
