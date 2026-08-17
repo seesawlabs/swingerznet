@@ -252,7 +252,8 @@ canvas:focus-visible{outline:3px solid #fff200;outline-offset:3px}
     if (state.you >= WIN_SCORE || state.cpu >= WIN_SCORE) {
       state.phase = 'over';
       showOverlay(
-        state.you > state.cpu ? 'Game, set, match.' : 'Game, set, wall.',
+        /* Same line either way; the score beneath it says who won. */
+        'Game, set, match.',
         'You ' + state.you + ' – ' + state.cpu + ' Wall · longest rally ' + state.best,
         'Rematch'
       );
