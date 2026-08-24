@@ -59,7 +59,7 @@ Website: swingerz.net
 Phone:   optional — none listed yet
 ```
 
-## Description / Full description (1165/4000)
+## Description / Full description (1164/4000)
 
 Shared between both stores — Apple's Description and Play's Full description
 both accept this plain text and line breaks as-is.
@@ -70,7 +70,7 @@ Stop texting six people to find one who's free.
 Swingerz helps pickleball and tennis players in Austin build real, recurring crews — then makes it easy to actually get on court together.
 
 GROUPS
-Create or join a group with people who play like you do — casual doubles on Tuesday mornings, a competitive 3.0–4.0 ladder, or your regular crew from the courts at Zilker. Invite friends, or find an established group looking for players.
+Create or join a group with people who play like you do — casual doubles on Tuesday mornings, a competitive 3.0–4.0 group, or your regular crew from the courts at Zilker. Invite friends, or find an established group looking for players.
 
 AVAILABILITY
 Post an open window and let your group know you're free. See who else has posted, propose a time, and confirm — no more "who's around Saturday?" text chains that go nowhere.
