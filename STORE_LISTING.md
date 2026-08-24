@@ -10,19 +10,19 @@ version with live character counts: https://claude.ai/code/artifact/7ad54e1b-221
 Swingerz
 ```
 
-**Subtitle** (28/30)
+**Subtitle** (26/30)
 ```
-Tennis & pickleball, matched
-```
-
-**Promotional text** (141/170) — editable without a new build
-```
-Austin's invite-only beta is open. Join a group, post when you're free, and get matched by skill — pickleball or tennis, no more group texts.
+Pickleball & tennis groups
 ```
 
-**Keywords** (98/100) — comma-separated, no spaces after commas
+**Promotional text** (134/170) — editable without a new build
 ```
-pickleball,tennis,pickleball partner,tennis partner,doubles,ntrp,racquet sports,austin,padel,squad
+Join a group, post when you're free, and get matched by skill — pickleball or tennis, no more group texts. Austin only, but expanding.
+```
+
+**Keywords** (100/100) — comma-separated, no spaces after commas
+```
+pickleball,tennis,pickleball partner,tennis partner,doubles,ntrp,racquet sports,austin,meetups,teams
 ```
 
 **Copyright line**
@@ -37,9 +37,9 @@ pickleball,tennis,pickleball partner,tennis partner,doubles,ntrp,racquet sports,
 Swingerz
 ```
 
-**Short description** (73/80)
+**Short description** (74/80)
 ```
-Pickleball & tennis crews — post your availability, get matched by skill.
+Pickleball & tennis groups — post your availability, get matched by skill.
 ```
 
 **Category**
@@ -59,7 +59,7 @@ Website: swingerz.net
 Phone:   optional — none listed yet
 ```
 
-## Description / Full description (1164/4000)
+## Description / Full description (1172/4000)
 
 Shared between both stores — Apple's Description and Play's Full description
 both accept this plain text and line breaks as-is.
@@ -70,7 +70,7 @@ Stop texting six people to find one who's free.
 Swingerz helps pickleball and tennis players in Austin build real, recurring crews — then makes it easy to actually get on court together.
 
 GROUPS
-Create or join a group with people who play like you do — casual doubles on Tuesday mornings, a competitive 3.0–4.0 group, or your regular crew from the courts at Zilker. Invite friends, or find an established group looking for players.
+Create or join a group with people who play like you do — casual doubles on Tuesday mornings, a competitive 3.0–4.0 group, or your regular crew from the courts at Zilker. Invite friends, or find an established group looking to add more players.
 
 AVAILABILITY
 Post an open window and let your group know you're free. See who else has posted, propose a time, and confirm — no more "who's around Saturday?" text chains that go nowhere.
