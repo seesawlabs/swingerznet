@@ -508,7 +508,12 @@ function launchConfetti(){
 .p3-wrap{max-width:960px;margin:0 auto;padding:52px 40px}
 @media(max-width:600px){.p3-wrap{padding:32px 24px}}
 .p3-eye{font-size:16.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#717182;margin-bottom:14px}
-.p3-h{font-size:clamp(38px,6vw,56px);font-weight:800;letter-spacing:-.03em;color:#030213;line-height:1.05;margin-bottom:16px}
+.p3-h{font-size:clamp(30px,4.8vw,45px);font-weight:800;letter-spacing:-.03em;color:#030213;line-height:1.05;margin-bottom:16px}
+/* In a two-column row the headline sits beside a panel whose border starts at
+   the box top, while the headline's own box top is ascender space above the
+   caps. Equal box tops therefore read as unequal, so pull the type up by that
+   gap and let the cap line up with the panel edge instead. */
+@media(min-width:680px){.p3-groups .p3-h{margin-top:-.16em}}
 .p3-body{font-size:clamp(14px,3.5vw,17px);font-weight:500;color:#717182;letter-spacing:-.01em;line-height:1.4;max-width:520px;margin-bottom:48px}
 
 /* Groups */
