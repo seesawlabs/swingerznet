@@ -505,7 +505,7 @@ function launchConfetti(){
    the box top, while the headline's own box top is ascender space above the
    caps. Equal box tops therefore read as unequal, so pull the type up by that
    gap and let the cap line up with the panel edge instead. */
-@media(min-width:680px){.p3-groups .p3-h{margin-top:-.16em}}
+@media(min-width:680px){.p3-groups .p3-h:first-child{margin-top:-.16em}}
 .p3-body{font-size:clamp(14px,3.5vw,17px);font-weight:500;color:#717182;letter-spacing:-.01em;line-height:1.4;max-width:520px;margin-bottom:48px}
 
 /* Groups */
@@ -517,13 +517,6 @@ function launchConfetti(){
 @media(min-width:1000px){.p3-groups{gap:140px}}
 /* Scheduling: text above cards on mobile, cards-left/text-right on desktop */
 .p3-sched-text{order:1}.p3-sched-cards{order:2}
-/* "Who it asks" labels the ring cards. Above 680px the cards lead the row, so
-   the section eyebrow already sits over them; stacked, the cards fall below
-   the headline, body and button and arrive unlabelled. Swap in a copy that
-   travels with them rather than showing the label twice. */
-.p3-eye-cards{display:block}
-@media(min-width:680px){.p3-eye-cards{display:none}}
-@media(max-width:679px){.p3-eye-section{display:none}}
 @media(min-width:680px){.p3-sched-text{order:2}.p3-sched-cards{order:1}}
 /* Conversation -- the chat sample beside the copy. Bubbles mirror the app's
    own chat: assistant left on white, you right on ink. */
@@ -668,10 +661,8 @@ function launchConfetti(){
 <!-- Who it asks -->
 <section>
   <div class="p3-wrap">
-    <p class="p3-eye p3-eye-section reveal">Who it asks</p>
     <div class="p3-groups">
       <div class="p3-sched-cards reveal">
-        <p class="p3-eye p3-eye-cards">Who it asks</p>
         <div class="p3-rings">
           <div class="p3-ring" style="--rc:#00a651">
             <div class="p3-rname">Friends</div>
@@ -688,7 +679,8 @@ function launchConfetti(){
         </div>
       </div>
       <div class="p3-sched-text">
-        <h2 class="p3-h reveal">Known partners first.<br>Then expand your circle.</h2>
+        <p class="p3-eye reveal">Who it asks</p>
+        <h2 class="p3-h reveal">Known partners first, then expand your circle.</h2>
         <p class="p3-body reveal" style="margin-bottom:20px">Swingy starts by asking players you&#x2019;ve already hit with. When they can&#x2019;t make it, Swingy goes one degree out and tells you who the connection is before you say yes.</p>
         <button class="reveal" onclick="copyInvite(this)" style="display:inline-flex;align-items:center;gap:8px;background:#fff200;color:#030213;font-family:inherit;font-weight:700;font-size:14px;letter-spacing:-.01em;border:0;border-radius:999px;padding:11px 20px;cursor:pointer">Invite someone to connect</button>
       </div>
