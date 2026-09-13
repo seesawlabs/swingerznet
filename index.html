@@ -539,20 +539,6 @@ function launchConfetti(){
 .p3-rname{font-size:16px;font-weight:700;color:#030213;margin-bottom:4px;letter-spacing:-.01em}
 .p3-rmeta{font-size:13px;color:#717182;font-weight:500;line-height:1.45}
 
-/* Activity log -- what Swingy did, timestamped. Time column collapses
-   above the text on phones rather than squeezing both onto one row. */
-.p3-log{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)}
-.p3-logrow{display:grid;grid-template-columns:80px 1fr;gap:14px;padding:13px 18px;border-top:1px solid #ececf0;font-size:14.5px;line-height:1.45}
-.p3-logrow:first-child{border-top:0}
-.p3-logt{font-size:12px;font-weight:600;color:#a1a1ab;padding-top:2px;font-variant-numeric:tabular-nums}
-.p3-logx{color:#5d5d6b}
-.p3-logx b{color:#030213;font-weight:700}
-@media(max-width:480px){
-  .p3-logrow{grid-template-columns:1fr;gap:2px}
-  .p3-logt{padding-top:0}
-}
-.p3-courts{font-size:13px;font-weight:600;color:#a1a1ab;letter-spacing:.02em;margin-top:20px;line-height:1.7}
-
 /* Placed last: this layer overrides #home-page and .nav3, and a media
    query adds no specificity, so it has to win on source order. */
 /* ── Bokeh ──
@@ -638,8 +624,8 @@ function launchConfetti(){
     <div class="p3-groups">
       <div>
         <p class="p3-eye reveal">The lifestyle</p>
-        <h2 class="p3-h reveal">No forms.<br>No calendar.</h2>
-        <p class="p3-body reveal" style="margin-bottom:0">Let Swingy do the legwork.<br>You just say the word.</p>
+        <h2 class="p3-h reveal">Your week, the game you love.</h2>
+        <p class="p3-body reveal" style="margin-bottom:0">Swingy does all the scheduling.<br>You see every step.</p>
         <p class="p3-says-lead reveal">Other things people say:</p>
         <div class="p3-says reveal">
           <span>Nobody above 4.5 this week</span>
@@ -687,22 +673,6 @@ function launchConfetti(){
         <p class="p3-body reveal" style="margin-bottom:0">Swingy hits up partners you know, then reaches out one degree, and shows you the connection.</p>
       </div>
     </div>
-  </div>
-</section>
-
-<!-- What it does -->
-<section>
-  <div class="p3-wrap">
-    <p class="p3-eye reveal">The arrangement</p>
-    <h2 class="p3-h reveal">Your week, the game you love.</h2>
-    <p class="p3-body reveal">Swingy does all the scheduling.<br>You see every step.</p>
-    <div class="p3-log reveal">
-      <div class="p3-logrow"><div class="p3-logt">7:36 am</div><div class="p3-logx">Asked <b>Lena</b>, <b>Sam</b> and <b>Tom</b> about Saturday doubles. Your usual four.</div></div>
-      <div class="p3-logrow"><div class="p3-logt">7:42 am</div><div class="p3-logx">Lena: in. Sam: in. Tom: in. Booked <b>Caswell court 6</b> for 9:00.</div></div>
-      <div class="p3-logrow"><div class="p3-logt">7:52 am</div><div class="p3-logx">Asked <b>Priya</b> and <b>Rob</b> about Sunday singles. Both play Sunday mornings.</div></div>
-      <div class="p3-logrow"><div class="p3-logt">8:05 am</div><div class="p3-logx"><b>Marcus</b> hasn&#x2019;t replied. Nudging him tonight.</div></div>
-    </div>
-    <p class="p3-courts reveal">Caswell &middot; Zilker &middot; Pharr &middot; Northwest Rec &middot; Austin Tennis Center</p>
   </div>
 </section>
 
