@@ -576,29 +576,52 @@ function launchConfetti(){
 .swingy-rail{position:absolute;left:50%;bottom:0;width:0;height:0;pointer-events:none;z-index:0}
 #p3-hero-wrap{position:relative;z-index:1}
 .swingy-entry{
-  --sw:72px; --amp:150px; --ex:-600px; --spin-in:1193deg; --spin-roll:477deg;
+  --sw:72px; --amp:150px; --ex:-600px; --mid:-323px; --spin-in:1193deg; --spin-mid:441deg; --spin-roll:477deg;
   position:absolute;bottom:0;left:calc(var(--sw) / -2);
   width:var(--sw);height:var(--sw);
-  animation:swingyEntryX 2.4s linear 3.8s both;
+  animation:swingyEntryX 3.4s 3.8s both;
 }
 .swingy-roll,.swingy-ball,.swingy-spin,.swingy-spin2{width:100%;height:100%}
-.swingy-roll {animation:swingyRollX   9s   ease-in-out 6.2s infinite}
+.swingy-roll {animation:swingyRollX   9s   ease-in-out 7.2s infinite}
 .swingy-ball {animation:swingyDropY   2.4s              3.8s both}
-.swingy-spin {animation:swingySpinIn  2.4s linear       3.8s both}
-.swingy-spin2{animation:swingySpinRoll 9s  ease-in-out 6.2s infinite}
+.swingy-spin {animation:swingySpinIn  3.4s              3.8s both}
+.swingy-spin2{animation:swingySpinRoll 9s  ease-in-out 7.2s infinite}
 .swingy-face{display:block;width:100%;height:100%}
 /* Fixed rather than viewport-scaled: at 320px the column only leaves about
    110px either side of centre, and a vw-based amplitude would make the spin
    ratio wrong at one end of the range or the other. */
 @media(max-width:700px){
-  .swingy-entry{--sw:52px;--amp:90px;--ex:-200px;--spin-in:639deg;--spin-roll:397deg}
+  .swingy-entry{--sw:52px;--amp:90px;--ex:-200px;--mid:-93px;--spin-in:639deg;--spin-mid:236deg;--spin-roll:397deg}
 }
 
-/* Horizontal velocity stays constant through the fall and the bounces, which
-   is what makes the entry read as a diagonal rather than a drop with a slide
-   on the end. */
-@keyframes swingyEntryX{from{transform:translateX(var(--ex))}to{transform:translateX(var(--amp))}}
-@keyframes swingySpinIn{from{transform:rotate(0deg)}to{transform:rotate(var(--spin-in))}}
+/* Horizontal velocity is constant while it is in the air -- that is what makes
+   the entry read as a diagonal rather than a drop with a slide on the end --
+   and then decays to nothing once it is down, like a ball losing speed to the
+   court. 23% is where the first impact lands.
+
+   The roll-out matters more than it sounds: with a linear run the ball was
+   still travelling at full speed on its last frame and then stopped dead,
+   because the roll that takes over begins from zero velocity. Ending the
+   entry at zero too makes the handover invisible. --mid is where the ball
+   touches down, placed so the flight and the roll-out share the distance the
+   way constant velocity then constant deceleration would.
+
+   cubic-bezier(.33,.66,.66,1) is not a taste call: it is the quadratic
+   ease-out, so its initial slope is exactly 2 and it decelerates at a
+   constant rate, like friction. It matters because that opening slope has to
+   match the speed the ball arrives at. A steeper curve made it visibly
+   accelerate on touchdown -- 512px/s through the air, then 885px/s the
+   instant it landed. */
+@keyframes swingyEntryX{
+  0%  {transform:translateX(var(--ex)); animation-timing-function:linear}
+  23% {transform:translateX(var(--mid));animation-timing-function:cubic-bezier(.33,.66,.66,1)}
+  100%{transform:translateX(var(--amp))}
+}
+@keyframes swingySpinIn{
+  0%  {transform:rotate(0deg);              animation-timing-function:linear}
+  23% {transform:rotate(var(--spin-mid));   animation-timing-function:cubic-bezier(.33,.66,.66,1)}
+  100%{transform:rotate(var(--spin-in))}
+}
 /* Starts and ends at the entry's landing point so the loop closes cleanly. */
 @keyframes swingyRollX{
   0%{transform:translateX(0)}
