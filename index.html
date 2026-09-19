@@ -360,8 +360,13 @@ body{
    so it stops at the column edge instead of crossing the bokeh margins. */
 footer{background:transparent;padding:40px 24px;text-align:center}
 .footer-logo{width:100%;max-width:200px;margin-bottom:20px;aspect-ratio:4.128312;}
-/* Swingy signs the page off, sized to sit on the wordmark's baseline. */
-.footer-mark{width:44px;height:44px;display:block;margin:0 auto 14px}
+/* Swingy signs the page off and is the way in to the Pong easter egg;
+   the tilt on hover is the only hint that it is clickable at all. */
+.footer-mark-link{display:block;width:44px;margin:0 auto 14px;line-height:0}
+.footer-mark{width:44px;height:44px;display:block;transition:transform .22s ease}
+.footer-mark-link:hover .footer-mark,
+.footer-mark-link:focus-visible .footer-mark{transform:rotate(-14deg) scale(1.1)}
+@media(prefers-reduced-motion:reduce){.footer-mark{transition:none}}
 .footer-links{display:flex;gap:20px;justify-content:center;flex-wrap:wrap;margin-bottom:20px}
 .footer-links a{font-size:12px;font-weight:500;color:#9ca3af;text-decoration:none}
 .footer-copy{font-size:11px;color:#9ca3af}
@@ -739,12 +744,15 @@ function launchConfetti(){
 
 <!-- Footer -->
 <footer>
-  <svg class="footer-mark" role="img" aria-label="Swingy"><use href="#swingy"></use></svg>
+  <a class="footer-mark-link" href="/info" aria-label="Play Pong">
+    <svg class="footer-mark" aria-hidden="true"><use href="#swingy"></use></svg>
+  </a>
   <img id="footer-logo-img2" class="footer-logo" alt="Swingerz">
   <div class="footer-links">
     <a href="/privacy.html">Privacy</a>
     <a href="/terms.html">Terms</a>
     <a href="mailto:love@swingerz.net">Contact</a>
+    <a href="/info">Pong</a>
   </div>
   <p class="footer-copy">&copy; 2026 Swingerz. Austin, TX.</p>
 </footer>
