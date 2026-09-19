@@ -502,7 +502,9 @@ function launchConfetti(){
     </div>
   </div>
   <div class="swingy-rail" aria-hidden="true">
-    <div class="swingy-roll"><svg class="swingy-ball"><use href="#swingy"></use></svg></div>
+    <div class="swingy-entry"><div class="swingy-roll"><div class="swingy-ball"><div class="swingy-spin"><div class="swingy-spin2">
+      <svg class="swingy-face"><use href="#swingy"></use></svg>
+    </div></div></div></div></div>
   </div>
 </section>
 
@@ -552,35 +554,65 @@ function launchConfetti(){
 .p3-rmeta{font-size:13px;color:#717182;font-weight:500;line-height:1.45}
 
 /* ── Swingy on the line ──
-   After the confetti clears, a bigger Swingy falls in, bounces to rest on the
-   hairline under the hero and then rolls slowly along it.
+   After the confetti clears, Swingy falls in from the upper left on a
+   diagonal, bounces to rest on the hairline under the hero, carries on
+   right, then rolls back and forth along it.
 
-   The rail is a zero-height strip pinned to #p3-hero's bottom edge. That edge
-   is exactly where the next section paints its 1px divider, so "resting on the
-   line" falls out of the layout instead of needing a magic offset. Y lives on
-   the inner element and X + spin on the outer, so the bounce can finish and
-   hand over to the roll without the two transforms fighting.
+   The rail is a zero-height strip pinned to #p3-hero's bottom edge. That
+   edge is exactly where the next section paints its 1px divider, so
+   "resting on the line" comes out of the layout instead of a tuned offset.
 
-   Rotation is tied to distance rather than picked by eye: the ball is 72px, so
-   a 150px run is 150/(pi*72) of a turn, about 239 degrees. Get that wrong and
-   it reads as sliding. */
+   Why five nested elements rather than one: a rotation applied to an
+   ancestor also rotates its descendants' translations, so a ball spun 113
+   degrees would then "roll" off along a 113 degree diagonal. Keeping every
+   translate above every rotate avoids that entirely -- translations compose
+   additively in any order, and rotations about a shared centre commute.
+
+   Spin is derived from distance, not chosen: a 750px run on a 72px ball is
+   750/(pi*72) of a turn, about 1193 degrees. Get it wrong and it slides. */
 #p3-hero{position:relative}
-/* Behind the hero content: the ball's top clears the line by 72px, which
-   reaches up into the store buttons, and it must not paint over the CTA. */
+/* Behind the hero content: the ball reaches 72px above the line, into the
+   store buttons, and must not paint over the CTA. */
 .swingy-rail{position:absolute;left:50%;bottom:0;width:0;height:0;pointer-events:none;z-index:0}
 #p3-hero-wrap{position:relative;z-index:1}
-.swingy-roll{
-  --sw:72px; --amp:150px;
+.swingy-entry{
+  --sw:72px; --amp:150px; --ex:-600px; --spin-in:1193deg; --spin-roll:477deg;
   position:absolute;bottom:0;left:calc(var(--sw) / -2);
   width:var(--sw);height:var(--sw);
-  animation:swingyRoll 9s ease-in-out 6.2s infinite;
+  animation:swingyEntryX 2.4s linear 3.8s both;
 }
-.swingy-ball{display:block;width:100%;height:100%;animation:swingyDrop 2.4s 3.8s both}
-@media(max-width:700px){.swingy-roll{--sw:52px;--amp:min(150px,22vw)}}
+.swingy-roll,.swingy-ball,.swingy-spin,.swingy-spin2{width:100%;height:100%}
+.swingy-roll {animation:swingyRollX   9s   ease-in-out 6.2s infinite}
+.swingy-ball {animation:swingyDropY   2.4s              3.8s both}
+.swingy-spin {animation:swingySpinIn  2.4s linear       3.8s both}
+.swingy-spin2{animation:swingySpinRoll 9s  ease-in-out 6.2s infinite}
+.swingy-face{display:block;width:100%;height:100%}
+/* Fixed rather than viewport-scaled: at 320px the column only leaves about
+   110px either side of centre, and a vw-based amplitude would make the spin
+   ratio wrong at one end of the range or the other. */
+@media(max-width:700px){
+  .swingy-entry{--sw:52px;--amp:90px;--ex:-200px;--spin-in:639deg;--spin-roll:397deg}
+}
 
-/* Falls accelerate, rises decelerate; each bounce keeps about 40% of the last
-   one's height, which is roughly how a ball behaves. */
-@keyframes swingyDrop{
+/* Horizontal velocity stays constant through the fall and the bounces, which
+   is what makes the entry read as a diagonal rather than a drop with a slide
+   on the end. */
+@keyframes swingyEntryX{from{transform:translateX(var(--ex))}to{transform:translateX(var(--amp))}}
+@keyframes swingySpinIn{from{transform:rotate(0deg)}to{transform:rotate(var(--spin-in))}}
+/* Starts and ends at the entry's landing point so the loop closes cleanly. */
+@keyframes swingyRollX{
+  0%{transform:translateX(0)}
+  50%{transform:translateX(calc(var(--amp) * -2))}
+  100%{transform:translateX(0)}
+}
+@keyframes swingySpinRoll{
+  0%{transform:rotate(0deg)}
+  50%{transform:rotate(calc(var(--spin-roll) * -1))}
+  100%{transform:rotate(0deg)}
+}
+/* Falls accelerate, rises decelerate; each bounce keeps about 40% of the
+   last one's height, which is roughly how a ball behaves. */
+@keyframes swingyDropY{
   0%  {transform:translateY(-760px);animation-timing-function:cubic-bezier(.5,0,.85,.35)}
   32% {transform:translateY(0);     animation-timing-function:cubic-bezier(.15,.7,.5,1)}
   48% {transform:translateY(-140px);animation-timing-function:cubic-bezier(.5,0,.85,.35)}
@@ -592,16 +624,9 @@ function launchConfetti(){
   98% {transform:translateY(-7px);  animation-timing-function:cubic-bezier(.5,0,.85,.35)}
   100%{transform:translateY(0)}
 }
-/* Starts and ends at centre so the loop closes without a jump. */
-@keyframes swingyRoll{
-  0%  {transform:translateX(0) rotate(0deg)}
-  25% {transform:translateX(var(--amp)) rotate(239deg)}
-  75% {transform:translateX(calc(var(--amp) * -1)) rotate(-239deg)}
-  100%{transform:translateX(0) rotate(0deg)}
-}
 /* Still there, just still. */
 @media(prefers-reduced-motion:reduce){
-  .swingy-ball,.swingy-roll{animation:none}
+  .swingy-entry,.swingy-roll,.swingy-ball,.swingy-spin,.swingy-spin2{animation:none}
 }
 
 /* Placed last: this layer overrides #home-page and .nav3, and a media
@@ -744,7 +769,7 @@ function launchConfetti(){
 
 <!-- Footer -->
 <footer>
-  <a class="footer-mark-link" href="/info" aria-label="Play Pong">
+  <a class="footer-mark-link" href="/pong.html" aria-label="Play Pong">
     <svg class="footer-mark" aria-hidden="true"><use href="#swingy"></use></svg>
   </a>
   <img id="footer-logo-img2" class="footer-logo" alt="Swingerz">
@@ -752,7 +777,7 @@ function launchConfetti(){
     <a href="/privacy.html">Privacy</a>
     <a href="/terms.html">Terms</a>
     <a href="mailto:love@swingerz.net">Contact</a>
-    <a href="/info">Pong</a>
+    <a href="/pong.html">Pong</a>
   </div>
   <p class="footer-copy">&copy; 2026 Swingerz. Austin, TX.</p>
 </footer>
