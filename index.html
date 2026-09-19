@@ -501,11 +501,7 @@ function launchConfetti(){
       </div>
     </div>
   </div>
-  <div class="swingy-rail" aria-hidden="true">
-    <div class="swingy-entry"><div class="swingy-roll"><div class="swingy-ball"><div class="swingy-spin"><div class="swingy-spin2">
-      <svg class="swingy-face"><use href="#swingy"></use></svg>
-    </div></div></div></div></div>
-  </div>
+  <div class="swingy-ball" aria-hidden="true"><svg class="swingy-face"><use href="#swingy"></use></svg></div>
 </section>
 
 
@@ -554,103 +550,28 @@ function launchConfetti(){
 .p3-rmeta{font-size:13px;color:#717182;font-weight:500;line-height:1.45}
 
 /* ── Swingy on the line ──
-   After the confetti clears, Swingy falls in from the upper left on a
-   diagonal, bounces to rest on the hairline under the hero, carries on
-   right, then rolls back and forth along it.
+   Swingy falls in from the upper left, bounces off the store buttons and
+   settles onto the hairline under the hero, then rolls back and forth.
 
-   The rail is a zero-height strip pinned to #p3-hero's bottom edge. That
-   edge is exactly where the next section paints its 1px divider, so
-   "resting on the line" comes out of the layout instead of a tuned offset.
+   This is a simulation rather than keyframes because the collisions depend on
+   where the buttons actually are, which changes with the viewport. The script
+   is at the bottom of the page; CSS only sizes and positions the element.
 
-   Why five nested elements rather than one: a rotation applied to an
-   ancestor also rotates its descendants' translations, so a ball spun 113
-   degrees would then "roll" off along a 113 degree diagonal. Keeping every
-   translate above every rotate avoids that entirely -- translations compose
-   additively in any order, and rotations about a shared centre commute.
-
-   Spin is derived from distance, not chosen: a 750px run on a 72px ball is
-   750/(pi*72) of a turn, about 1193 degrees. Get it wrong and it slides. */
+   It is drawn above the hero content. That is safe precisely because it now
+   collides with the buttons instead of passing through them, so it never
+   covers the CTA. */
 #p3-hero{position:relative}
-/* Behind the hero content: the ball reaches 72px above the line, into the
-   store buttons, and must not paint over the CTA. */
-.swingy-rail{position:absolute;left:50%;bottom:0;width:0;height:0;pointer-events:none;z-index:0}
 #p3-hero-wrap{position:relative;z-index:1}
-.swingy-entry{
-  --sw:72px; --amp:150px; --ex:-600px; --mid:-323px; --spin-in:1193deg; --spin-mid:441deg; --spin-roll:477deg;
-  position:absolute;bottom:0;left:calc(var(--sw) / -2);
-  width:var(--sw);height:var(--sw);
-  animation:swingyEntryX 3.4s 3.8s both;
+.swingy-ball{
+  --sw:72px;
+  position:absolute;top:0;left:0;width:var(--sw);height:var(--sw);
+  pointer-events:none;z-index:3;will-change:transform;
+  transform:translate3d(-999px,-999px,0);
 }
-.swingy-roll,.swingy-ball,.swingy-spin,.swingy-spin2{width:100%;height:100%}
-.swingy-roll {animation:swingyRollX   9s   ease-in-out 7.2s infinite}
-.swingy-ball {animation:swingyDropY   2.4s              3.8s both}
-.swingy-spin {animation:swingySpinIn  3.4s              3.8s both}
-.swingy-spin2{animation:swingySpinRoll 9s  ease-in-out 7.2s infinite}
 .swingy-face{display:block;width:100%;height:100%}
-/* Fixed rather than viewport-scaled: at 320px the column only leaves about
-   110px either side of centre, and a vw-based amplitude would make the spin
-   ratio wrong at one end of the range or the other. */
-@media(max-width:700px){
-  .swingy-entry{--sw:52px;--amp:90px;--ex:-200px;--mid:-93px;--spin-in:639deg;--spin-mid:236deg;--spin-roll:397deg}
-}
-
-/* Horizontal velocity is constant while it is in the air -- that is what makes
-   the entry read as a diagonal rather than a drop with a slide on the end --
-   and then decays to nothing once it is down, like a ball losing speed to the
-   court. 23% is where the first impact lands.
-
-   The roll-out matters more than it sounds: with a linear run the ball was
-   still travelling at full speed on its last frame and then stopped dead,
-   because the roll that takes over begins from zero velocity. Ending the
-   entry at zero too makes the handover invisible. --mid is where the ball
-   touches down, placed so the flight and the roll-out share the distance the
-   way constant velocity then constant deceleration would.
-
-   cubic-bezier(.33,.66,.66,1) is not a taste call: it is the quadratic
-   ease-out, so its initial slope is exactly 2 and it decelerates at a
-   constant rate, like friction. It matters because that opening slope has to
-   match the speed the ball arrives at. A steeper curve made it visibly
-   accelerate on touchdown -- 512px/s through the air, then 885px/s the
-   instant it landed. */
-@keyframes swingyEntryX{
-  0%  {transform:translateX(var(--ex)); animation-timing-function:linear}
-  23% {transform:translateX(var(--mid));animation-timing-function:cubic-bezier(.33,.66,.66,1)}
-  100%{transform:translateX(var(--amp))}
-}
-@keyframes swingySpinIn{
-  0%  {transform:rotate(0deg);              animation-timing-function:linear}
-  23% {transform:rotate(var(--spin-mid));   animation-timing-function:cubic-bezier(.33,.66,.66,1)}
-  100%{transform:rotate(var(--spin-in))}
-}
-/* Starts and ends at the entry's landing point so the loop closes cleanly. */
-@keyframes swingyRollX{
-  0%{transform:translateX(0)}
-  50%{transform:translateX(calc(var(--amp) * -2))}
-  100%{transform:translateX(0)}
-}
-@keyframes swingySpinRoll{
-  0%{transform:rotate(0deg)}
-  50%{transform:rotate(calc(var(--spin-roll) * -1))}
-  100%{transform:rotate(0deg)}
-}
-/* Falls accelerate, rises decelerate; each bounce keeps about 40% of the
-   last one's height, which is roughly how a ball behaves. */
-@keyframes swingyDropY{
-  0%  {transform:translateY(-760px);animation-timing-function:cubic-bezier(.5,0,.85,.35)}
-  32% {transform:translateY(0);     animation-timing-function:cubic-bezier(.15,.7,.5,1)}
-  48% {transform:translateY(-140px);animation-timing-function:cubic-bezier(.5,0,.85,.35)}
-  62% {transform:translateY(0);     animation-timing-function:cubic-bezier(.15,.7,.5,1)}
-  73% {transform:translateY(-56px); animation-timing-function:cubic-bezier(.5,0,.85,.35)}
-  82% {transform:translateY(0);     animation-timing-function:cubic-bezier(.15,.7,.5,1)}
-  89% {transform:translateY(-22px); animation-timing-function:cubic-bezier(.5,0,.85,.35)}
-  95% {transform:translateY(0);     animation-timing-function:cubic-bezier(.15,.7,.5,1)}
-  98% {transform:translateY(-7px);  animation-timing-function:cubic-bezier(.5,0,.85,.35)}
-  100%{transform:translateY(0)}
-}
-/* Still there, just still. */
-@media(prefers-reduced-motion:reduce){
-  .swingy-entry,.swingy-roll,.swingy-ball,.swingy-spin,.swingy-spin2{animation:none}
-}
+/* Small enough that when he comes to rest on top of the store buttons -- the
+   only place he fits on a phone -- he still clears the line of copy above. */
+@media(max-width:700px){.swingy-ball{--sw:40px}}
 
 /* Placed last: this layer overrides #home-page and .nav3, and a media
    query adds no specificity, so it has to win on source order. */
@@ -925,6 +846,235 @@ function dropBalls() {
    is declared here, not in the first one. */
 showHome();
 launchConfetti();
+
+/* ── Swingy, simulated ──
+   Keyframes could not do this: the ball has to collide with the store
+   buttons, and where those sit changes with the viewport. So it is a small
+   rigid-body loop in hero-local pixels -- origin at #p3-hero's top left.
+
+   The floor is positional rather than a single line. The gap under the
+   buttons is 52px on desktop and 32px on a phone, against a 72px/52px ball,
+   so it cannot pass beneath them; on a 390px screen the buttons span almost
+   the full width. Treating every button as solid and letting the collision
+   decide means the ball rests on the hairline where there is room and climbs
+   onto the buttons where there is not, at any width, with nothing hard-coded. */
+(function(){
+  var ball = document.querySelector('.swingy-ball');
+  var hero = document.getElementById('p3-hero');
+  if (!ball || !hero) return;
+
+  var G = 1600;        // px/s^2
+  var E_FLOOR = 0.55;  // restitution
+  var E_BOX   = 0.45;  // buttons are less lively than the ground
+  var ROLL_FRICTION = 1.6;   // per second, while grounded
+  var START_DELAY = 3800;    // let the confetti clear first
+  var SETTLE_V = 26;         // px/s below which we call it stopped
+  var ROLL_PERIOD = 9000;    // back-and-forth, ms
+  var ROLL_RAMP = 1800;      // ease the oscillation in, ms
+
+  var R, floorY, boxes = [], W = 0;
+  var x, y, vx, vy, spin = 0;
+  var grounded = false, rollFrom = 0, rollC = 0, rollLo = 0, rollHi = 0;
+  var amp = 0, rollT = 0, rolling = false;
+  var started = false, raf = 0, last = 0, visible = true;
+
+  function measure(){
+    var hb = hero.getBoundingClientRect();
+    W = hb.width;
+    floorY = hb.height;                 // the divider the next section paints
+    R = ball.offsetWidth / 2;
+    boxes = [];
+    var btns = hero.querySelectorAll('#p3-hero-text a');
+    for (var i = 0; i < btns.length; i++){
+      var b = btns[i].getBoundingClientRect();
+      boxes.push({ l:b.left-hb.left, r:b.right-hb.left, t:b.top-hb.top, b:b.bottom-hb.top });
+    }
+  }
+
+  function draw(){
+    ball.style.transform = 'translate3d(' + (x-R).toFixed(1) + 'px,' + (y-R).toFixed(1) + 'px,0) rotate(' + spin.toFixed(1) + 'deg)';
+  }
+
+  /* Circle against an axis-aligned box: push out along the shortest axis and
+     reflect. Good enough here and cheap, which matters in a rAF loop. */
+  function hitBox(o){
+    var nx = Math.max(o.l, Math.min(x, o.r));
+    var ny = Math.max(o.t, Math.min(y, o.b));
+    var dx = x - nx, dy = y - ny, d2 = dx*dx + dy*dy;
+    if (d2 >= R*R) return false;
+    var d = Math.sqrt(d2);
+    if (d > 0.0001){
+      var ux = dx/d, uy = dy/d;
+      x = nx + ux*R; y = ny + uy*R;
+      var dot = vx*ux + vy*uy;
+      if (dot < 0){ vx -= (1+E_BOX)*dot*ux; vy -= (1+E_BOX)*dot*uy; }
+      if (uy < -0.6 && Math.abs(vy) < 90){ y = o.t - R; vy = 0; grounded = true; }
+    } else {                       // centre inside: eject upward
+      y = o.t - R; vy = 0; grounded = true;
+    }
+    return true;
+  }
+
+  /* The stretch of centre positions he can roll through from here: walled in
+     by whatever button is in the way, and -- when he has come to rest on top
+     of one -- limited to the ledge he is actually standing on. He will bridge
+     the seam between two buttons sitting at the same height, because he is
+     wider than the seam. */
+  function freeInterval(cx, cy){
+    var lo = R, hi = W - R, i, o;
+    var ledge = cy + R;
+    var onFloor = ledge >= floorY - 1;
+
+    if (!onFloor){
+      var L = null, Rt = null;                 // the coplanar run under him
+      for (i = 0; i < boxes.length; i++){
+        o = boxes[i];
+        if (Math.abs(o.t - ledge) > 2) continue;
+        if (o.r < cx - R - 1 || o.l > cx + R + 1){   // only if he can reach it
+          if (L === null) continue;
+          if (o.r <= L && L - o.r > R) continue;
+          if (o.l >= Rt && o.l - Rt > R) continue;
+        }
+        L  = L  === null ? o.l : Math.min(L,  o.l);
+        Rt = Rt === null ? o.r : Math.max(Rt, o.r);
+      }
+      if (L !== null){ lo = Math.max(lo, L + R); hi = Math.min(hi, Rt - R); }
+    }
+
+    for (i = 0; i < boxes.length; i++){
+      o = boxes[i];
+      if (cy + R <= o.t + 1 || cy - R >= o.b - 1) continue;   // not at this height
+      if (o.t > cy + R*0.67) continue;             // too low to stop him
+      if (o.r <= cx) lo = Math.max(lo, o.r + R + 4);
+      if (o.l >= cx) hi = Math.min(hi, o.l - R - 4);
+    }
+    return { lo:lo, hi:hi };
+  }
+
+  /* Ease in with zero velocity at both ends, so the roll opens out of the
+     stop rather than snapping into it. */
+  function smoothstep(t){ t = Math.min(1, Math.max(0, t)); return t*t*(3 - 2*t); }
+
+  function settleRoll(){
+    var f = freeInterval(x, y);
+    rollFrom = x;
+    rollLo = f.lo; rollHi = f.hi;
+    rollC = (f.lo + f.hi) / 2;
+    amp = Math.min(150, (f.hi - f.lo) / 2);
+    if (f.hi <= f.lo) amp = 0;
+    rollT = 0;
+    rolling = amp > 12;
+  }
+
+  function step(ts){
+    raf = requestAnimationFrame(step);
+    if (!last) last = ts;
+    var dt = Math.min(0.032, (ts - last)/1000);
+    last = ts;
+    if (!visible) return;
+
+    if (rolling){
+      rollT += dt*1000;
+      var e = smoothstep(rollT/ROLL_RAMP);
+      var c = rollFrom + (rollC - rollFrom) * e;      // drift to the middle
+      /* While he is still drifting, keep the swing inside the room he has, so
+         he never overhangs the ledge he stopped on. */
+      var a = Math.min(amp * e, Math.min(c - rollLo, rollHi - c));
+      var nx = c + a * Math.sin(2*Math.PI * rollT/ROLL_PERIOD);
+      spin += (nx - x) / R * (180/Math.PI);
+      x = nx;
+      draw();
+      return;
+    }
+
+    /* Substep so nothing moves more than a third of a radius per pass. The
+       ball tops out near 1000px/s and the buttons are only 48px thick, so a
+       single 16ms step could put it clean through one -- and a frame drop
+       makes that a certainty rather than a risk. */
+    var px = x;
+    var speed = Math.abs(vx) + Math.abs(vy) + G*dt;
+    var n = Math.min(12, Math.max(1, Math.ceil(speed*dt / (R/3))));
+    var h = dt/n;
+    grounded = false;
+    for (var k = 0; k < n; k++){
+      vy += G*h;
+      x += vx*h; y += vy*h;
+
+      if (y + R >= floorY){
+        y = floorY - R;
+        if (vy > 0){ vy = -vy*E_FLOOR; if (Math.abs(vy) < 60) vy = 0; }
+        grounded = true;
+      }
+      /* Twice: pushing him off one button can leave him touching the next. */
+      for (var pass = 0; pass < 2; pass++)
+        for (var i = 0; i < boxes.length; i++) hitBox(boxes[i]);
+
+      if (x - R < 0){ x = R; vx = -vx*E_BOX; }
+      if (x + R > W){ x = W - R; vx = -vx*E_BOX; }
+    }
+
+    if (grounded){
+      vx -= vx * Math.min(1, ROLL_FRICTION*dt);
+      if (Math.abs(vx) < SETTLE_V && Math.abs(vy) < SETTLE_V){
+        settleRoll();
+        vx = vy = 0;
+      }
+    }
+    spin += (x - px) / R * (180/Math.PI);
+    draw();
+  }
+
+  /* Resting pose for reduced motion: the same place he would have ended up,
+     without the trip. On the line unless a button is under him, in which case
+     he sits on top of it. */
+  function place(){
+    measure();
+    x = W/2; y = floorY - R;
+    for (var i = 0; i < boxes.length; i++){
+      var o = boxes[i];
+      if (x + R > o.l && x - R < o.r) y = Math.min(y, o.t - R);
+    }
+    spin = 0; draw();
+  }
+
+  function start(){
+    if (started) return;
+    started = true;
+    measure();
+    x = -R; y = -R - 90; vx = 540; vy = 0;   // in from the upper left
+    last = 0; raf = requestAnimationFrame(step);
+  }
+
+  var reduce = window.matchMedia('(prefers-reduced-motion:reduce)');
+  if (reduce.matches){
+    /* Wait for the hero to reach its real height -- the script runs inline,
+       long before the screenshots and webfonts have settled it. */
+    var pose = function(){ place(); };
+    if (document.readyState === 'complete') pose();
+    else window.addEventListener('load', pose);
+    window.addEventListener('resize', pose);
+    return;
+  }
+
+  window.addEventListener('resize', function(){
+    var wasRolling = rolling;
+    measure();
+    if (wasRolling){                     // the layout moved under him: re-land
+      rolling = false; vx = 0; vy = 0;
+      x = Math.min(Math.max(x, R), W - R);
+      y = Math.min(y, floorY - R);
+    }
+  });
+
+  /* Nothing to animate while the hero is off screen. */
+  if (window.IntersectionObserver){
+    new IntersectionObserver(function(es){ visible = es[0].isIntersecting; last = 0; })
+      .observe(hero);
+  }
+
+  setTimeout(start, START_DELAY);
+})();
+
 
 </script>
 </body>
