@@ -485,6 +485,7 @@ function launchConfetti(){
       <div id="p3-hero-text">
         <h1 id="p3-hero-h1">Connect,<br>Match,<br>&amp; Play.</h1>
         <p style="font-size:clamp(17px,4.2vw,19px);font-weight:500;color:#717182;letter-spacing:-.01em;line-height:1.4;max-width:440px;margin-bottom:36px">Meet Swingy, the AI tennis<br>assistant that finds partners<br>and schedules matches for you.</p>
+        <div id="swingy-perch" aria-hidden="true"></div>
         <div style="display:flex;gap:12px;flex-wrap:wrap">
           <a href="#" style="display:inline-flex;align-items:center;gap:10px;background:#030213;color:#fff;border-radius:12px;padding:10px 18px;text-decoration:none;min-width:148px">
             <svg width="22" height="27" viewBox="0 0 22 27" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18.04 14.3c-.03-3.13 2.56-4.64 2.67-4.71-1.46-2.13-3.72-2.42-4.52-2.45-1.92-.2-3.76 1.14-4.73 1.14-.98 0-2.49-1.11-4.1-1.08-2.1.03-4.05 1.23-5.13 3.1-2.2 3.81-.56 9.44 1.57 12.53 1.04 1.5 2.28 3.18 3.9 3.12 1.57-.06 2.16-1.01 4.06-1.01 1.88 0 2.43 1.01 4.08.98 1.69-.03 2.76-1.52 3.79-3.03 1.2-1.73 1.69-3.42 1.71-3.5-.04-.02-3.27-1.25-3.3-4.99z" fill="white"/><path d="M14.88 4.9c.87-1.05 1.45-2.5 1.29-3.96-1.25.05-2.76.83-3.65 1.87-.8.93-1.5 2.42-1.31 3.84 1.39.11 2.81-.71 3.67-1.75z" fill="white"/></svg>
@@ -598,24 +599,18 @@ function launchConfetti(){
 @media(prefers-reduced-motion:reduce){
   .swingy-bub,.swingy-say.in .swingy-bub{transition:none}
 }
-/* On a phone he sits on the store buttons, and the gap between them and the
-   copy above is 36px. The type stays exactly the chat's; the box loses the
-   padding it cannot afford. */
-@media(max-width:700px){
-  .swingy-bub{padding-top:6px;padding-bottom:6px}
-  .swingy-typed{top:6px}
+@media(max-width:699.98px){.swingy-ball{--sw:52px}}
+
+/* A phone hides the screenshots, and without them he had nowhere to be but
+   on top of the store badges. This gives him his own line above them --
+   drawn like the section dividers, and as wide as they are -- with the
+   subhead's own margin as air above and room below before the badges.
+   Its height is his, so he fills the line exactly. Breakpoint matches the
+   one the screenshots appear at. */
+#swingy-perch{display:none}
+@media(max-width:699.98px){
+  #swingy-perch{display:block;height:52px;margin:0 0 24px;border-bottom:1px solid #e5e7eb}
 }
-/* Too narrow to say a long line beside him and clear of the buttons, so let
-   it wrap instead. The width has to be stated: the bubble hangs off a
-   zero-width anchor, so there is no available width for it to shrink to fit
-   and it would break at every space. The ghost sets the box and the typed
-   copy fills the same one, so both break in the same places. */
-@media(max-width:360px){
-  .swingy-bub{white-space:normal;width:126px}
-}
-/* Small enough that when he comes to rest on top of the store buttons -- the
-   only place he fits on a phone -- he still clears the line of copy above. */
-@media(max-width:700px){.swingy-ball{--sw:40px}}
 
 /* Placed last: this layer overrides #home-page and .nav3, and a media
    query adds no specificity, so it has to win on source order. */
@@ -936,32 +931,47 @@ launchConfetti();
   var lineAt = 0, typer = 0, cycleT = 0;
   var started = false, raf = 0, last = 0, visible = true;
 
+  /* The widest thing he is going to say, so he can stand where it fits. */
+  function widestSay(){
+    if (!ghost || !bub) return 0;
+    var keep = ghost.textContent, w = 0;
+    for (var i = 0; i < LINES.length; i++){
+      ghost.textContent = LINES[i];
+      w = Math.max(w, bub.offsetWidth);
+    }
+    ghost.textContent = keep;
+    return w;
+  }
+
   function measure(){
     var hb = hero.getBoundingClientRect();
     W = hb.width;
-    floorY = hb.height;                 // the divider the next section paints
     R = ball.offsetWidth / 2;
+
+    /* On a phone he has a line of his own above the badges; everywhere else
+       he runs on the divider the next section paints. */
+    var perch = document.getElementById('swingy-perch');
+    var pb = perch && perch.offsetParent !== null ? perch.getBoundingClientRect() : null;
+    floorY = pb ? pb.bottom - hb.top - 1 : hb.height;
+
     boxes = [];
     var i, b;
     var btns = hero.querySelectorAll('#p3-hero-text a');
     for (i = 0; i < btns.length; i++){
       b = btns[i].getBoundingClientRect();
+      if (b.top - hb.top >= floorY - 1) continue;    // under his floor: can't reach it
       boxes.push({ l:b.left-hb.left, r:b.right-hb.left, t:b.top-hb.top, b:b.bottom-hb.top });
     }
 
-    /* Where he is headed: under the middle of the phones. They are hidden on
-       a phone-sized screen, where he ends up on the buttons instead, so aim
-       for the middle of those. */
+    /* Where he is headed: under the middle of the phones. With them hidden
+       there is nothing to stand under, so he stands wherever leaves room for
+       the longest line to fit beside him. */
     var shot = document.getElementById('p3-phone-desktop');
     var sb = shot ? shot.getBoundingClientRect() : null;
     if (sb && sb.width > 40){
       aimX = sb.left - hb.left + sb.width/2;
-    } else if (boxes.length){
-      var l = Infinity, r = -Infinity;
-      for (i = 0; i < boxes.length; i++){ l = Math.min(l, boxes[i].l); r = Math.max(r, boxes[i].r); }
-      aimX = (l + r) / 2;
     } else {
-      aimX = W / 2;
+      aimX = Math.max(R + 8, Math.min(W/2, W - 10 - widestSay() - R*0.72));
     }
   }
 
