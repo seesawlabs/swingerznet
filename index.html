@@ -502,7 +502,7 @@ function launchConfetti(){
     </div>
   </div>
   <div class="swingy-ball" aria-hidden="true"><svg class="swingy-face"><use href="#swingy"></use></svg></div>
-  <div class="swingy-say" aria-hidden="true"><span class="swingy-bub"><span class="swingy-ghost">Hey, what&#x2019;s up?</span><span class="swingy-typed"></span></span></div>
+  <div class="swingy-say" aria-hidden="true"><span class="swingy-bub p3-cb"><span class="swingy-ghost">Hey, what&#x2019;s up?</span><span class="swingy-typed"></span></span></div>
 </section>
 
 
@@ -580,11 +580,11 @@ function launchConfetti(){
   z-index:2;pointer-events:none;      /* behind him: it comes from his mouth */
   transform:translate3d(-999px,-999px,0);
 }
+/* It carries .p3-cb, so the type is the chat's type -- same size, weight,
+   spacing, colour, leading. Only what it takes to hang it off the anchor
+   and pop it is set here. */
 .swingy-bub{
-  position:absolute;left:0;bottom:0;white-space:nowrap;
-  padding:10px 15px;border-radius:18px;border-bottom-left-radius:6px;
-  background:#fff;border:1px solid #e3e3ea;color:#030213;
-  font-size:15px;line-height:1.45;font-weight:500;letter-spacing:-.01em;
+  position:absolute;left:0;bottom:0;max-width:none;white-space:nowrap;
   box-shadow:0 8px 24px rgba(3,2,19,.12);
   transform-origin:0 100%;transform:scale(.4);opacity:0;
   transition:transform .2s cubic-bezier(.4,0,1,1),opacity .16s linear;
@@ -594,13 +594,16 @@ function launchConfetti(){
   transition:transform .26s cubic-bezier(.34,1.56,.64,1),opacity .15s linear;
 }
 .swingy-ghost{visibility:hidden}
-.swingy-typed{position:absolute;left:15px;right:15px;top:10px}
+.swingy-typed{position:absolute;left:15px;right:15px;top:11px}
 @media(prefers-reduced-motion:reduce){
   .swingy-bub,.swingy-say.in .swingy-bub{transition:none}
 }
+/* On a phone he sits on the store buttons, and the gap between them and the
+   copy above is 36px. The type stays exactly the chat's; the box loses the
+   padding it cannot afford. */
 @media(max-width:700px){
-  .swingy-bub{font-size:13.5px;padding:8px 13px}
-  .swingy-typed{left:13px;right:13px;top:8px}
+  .swingy-bub{padding-top:6px;padding-bottom:6px}
+  .swingy-typed{top:6px}
 }
 /* Too narrow to say a long line beside him and clear of the buttons, so let
    it wrap instead. The width has to be stated: the bubble hangs off a
@@ -919,10 +922,7 @@ launchConfetti();
   var E_BOX   = 0.45;  // buttons are less lively than the ground
   var ROLL_FRICTION = 1.6;   // per second, while grounded
   var START_DELAY = 3800;    // let the confetti clear first
-  var SETTLE_V = 26;         // px/s below which we call it stopped
-  var ROLL_TIME = 5200;      // rolling to a halt takes this long, ms
-  var ROLL_TURNS = 1.5;      // half-swings on the way in
-  var SWING = 110;           // how far out he likes to wander, px
+  var HANDOFF_V = 300;       // px/s: slow enough to steer him in from here
   var SAY_AFTER = 260;       // beat between stopping and speaking, ms
   var TYPE_MS = 42;          // per character
   var HOLD = 3600;           // a finished line stays up this long, ms
@@ -931,7 +931,7 @@ launchConfetti();
   var R, floorY, boxes = [], W = 0, aimX = 0;
   var x, y, vx, vy, spin = 0;
   var grounded = false, rollFrom = 0, rollLo = 0, rollHi = 0;
-  var target = 0, swing = 0, spinFrom = 0, spinErr = 0;
+  var target = 0, rollV = 0, rollDur = 1, spinFrom = 0, spinErr = 0;
   var rollT = 0, rolling = false, stopped = false;
   var lineAt = 0, typer = 0, cycleT = 0;
   var started = false, raf = 0, last = 0, visible = true;
@@ -1037,9 +1037,10 @@ launchConfetti();
      stop rather than snapping into it. */
   function smoothstep(t){ t = Math.min(1, Math.max(0, t)); return t*t*(3 - 2*t); }
 
-  /* He has come to rest somewhere arbitrary; from here he rolls in to the
-     aim point and stops. The approach is a smooth glide with a windowed
-     wobble laid over it, both starting and ending at a standstill. */
+  /* Done bouncing, still rolling: from here one curve carries him to the aim
+     point. It leaves at the speed he is already doing and arrives at a dead
+     stop, so there is no second start -- he just keeps rolling and runs out
+     of speed in the right place. */
   function settleRoll(){
     var f = freeInterval(x, y);
     rollFrom = x; rollLo = f.lo; rollHi = f.hi;
@@ -1057,15 +1058,30 @@ launchConfetti();
         if (cand >= f.lo && cand <= f.hi){ target = cand; break; }
       }
     }
-    var off = Math.abs(rollFrom - target);
-    var room = Math.min(target - f.lo, f.hi - target);
-    swing = Math.max(0, Math.min(SWING - off, room - off));
+    var d = target - rollFrom;
+    rollV = vx;
+    /* Braking at a constant rate covers d in 2d/v, which is what a ball
+       rolling to a stop actually does. If he is going the wrong way he has
+       to turn round first, so give him a little longer. */
+    rollDur = (d !== 0 && rollV * d > 0) ? 2*Math.abs(d)/Math.abs(rollV)
+                                         : Math.abs(d)/120 + 0.9;
+    /* The curve bulges the way he is already travelling, by at most
+       4/27 of v*T. Shorten it rather than let that run past the clear
+       stretch and get clipped. */
+    if (Math.abs(rollV) > 1){
+      var slack = (rollV > 0 ? f.hi - Math.max(rollFrom, target)
+                             : Math.min(rollFrom, target) - f.lo) - 2;
+      rollDur = Math.min(rollDur, Math.max(0, slack) * 27 / (4 * Math.abs(rollV)));
+    }
+    rollDur = Math.min(Math.max(rollDur, 0.35), 3.4);
+
     spinFrom = spin;
     /* Normally nothing to make up -- he was launched pre-turned for exactly
        this landing -- but the layout can have moved since. */
-    spinErr = -wrap180(spin + (target - rollFrom) * degPerPx());
+    spinErr = -wrap180(spin + d * degPerPx());
     rollT = 0;
-    rolling = off > 1.5 || swing > 8 || Math.abs(spinErr) > 1;
+    vx = vy = 0;
+    rolling = Math.abs(d) > 0.5 || Math.abs(rollV) > 4 || Math.abs(spinErr) > 1;
     if (!rolling) stop();
   }
 
@@ -1155,15 +1171,15 @@ launchConfetti();
     if (!visible) return;
 
     if (rolling){
-      rollT += dt*1000;
-      var u = rollT / ROLL_TIME;
-      if (u >= 1){ stop(); return; }
-      var glide = 1 - smoothstep(u);                  // in to the aim point
-      var win = Math.sin(Math.PI*u); win *= win;      // wobble, fading both ends
-      var nx = target + (rollFrom - target)*glide
-                      + swing*win*Math.sin(2*Math.PI*ROLL_TURNS*u);
-      spin = spinFrom + (nx - rollFrom)*degPerPx() + spinErr*smoothstep(u);
-      x = Math.min(Math.max(nx, rollLo), rollHi);
+      rollT += dt;
+      var s = rollT / rollDur;
+      if (s >= 1){ stop(); return; }
+      /* Hermite: leaves at rollV, lands on the target with nothing left. */
+      var h10 = s*(s-1)*(s-1), h01 = s*s*(3 - 2*s);
+      var nx = rollFrom + rollV*rollDur*h10 + (target - rollFrom)*h01;
+      nx = Math.min(Math.max(nx, rollLo), rollHi);
+      spin = spinFrom + (nx - rollFrom)*degPerPx() + spinErr*smoothstep(s);
+      x = nx;
       draw();
       return;
     }
@@ -1198,8 +1214,9 @@ launchConfetti();
 
     if (grounded){
       vx -= vx * Math.min(1, ROLL_FRICTION*dt);
-      if (Math.abs(vx) < SETTLE_V && Math.abs(vy) < SETTLE_V){
-        vx = vy = 0;
+      /* Once he has stopped bouncing and slowed to a walk, hand the rest
+         over: one curve from here to the aim point, no stop in between. */
+      if (Math.abs(vy) < 1 && Math.abs(vx) < HANDOFF_V){
         settleRoll();
         if (stopped) return;             // stop() has already drawn him
       }
