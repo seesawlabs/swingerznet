@@ -502,6 +502,7 @@ function launchConfetti(){
     </div>
   </div>
   <div class="swingy-ball" aria-hidden="true"><svg class="swingy-face"><use href="#swingy"></use></svg></div>
+  <div class="swingy-say" aria-hidden="true"><span class="swingy-bub"><span class="swingy-ghost">Hey, what&#x2019;s up?</span><span class="swingy-typed"></span></span></div>
 </section>
 
 
@@ -569,6 +570,37 @@ function launchConfetti(){
   transform:translate3d(-999px,-999px,0);
 }
 .swingy-face{display:block;width:100%;height:100%}
+
+/* What he says once he has come to a stop. The wrapper is a zero-size anchor
+   the script moves to his head; the bubble hangs off its bottom-left corner,
+   which is also where it pops from. The ghost copy holds the bubble at its
+   finished size so it does not grow while the words arrive. */
+.swingy-say{
+  position:absolute;top:0;left:0;width:0;height:0;
+  z-index:2;pointer-events:none;      /* behind him: it comes from his mouth */
+  transform:translate3d(-999px,-999px,0);
+}
+.swingy-bub{
+  position:absolute;left:0;bottom:0;white-space:nowrap;
+  padding:10px 15px;border-radius:18px;border-bottom-left-radius:6px;
+  background:#fff;border:1px solid #e3e3ea;color:#030213;
+  font-size:15px;line-height:1.45;font-weight:500;letter-spacing:-.01em;
+  box-shadow:0 8px 24px rgba(3,2,19,.12);
+  transform-origin:0 100%;transform:scale(.4);opacity:0;
+}
+.swingy-say.in .swingy-bub{
+  transform:scale(1);opacity:1;
+  transition:transform .26s cubic-bezier(.34,1.56,.64,1),opacity .15s linear;
+}
+.swingy-ghost{visibility:hidden}
+.swingy-typed{position:absolute;left:15px;top:10px}
+@media(prefers-reduced-motion:reduce){
+  .swingy-say .swingy-bub{transition:none}
+}
+@media(max-width:700px){
+  .swingy-bub{font-size:13.5px;padding:8px 13px}
+  .swingy-typed{left:13px;top:8px}
+}
 /* Small enough that when he comes to rest on top of the store buttons -- the
    only place he fits on a phone -- he still clears the line of copy above. */
 @media(max-width:700px){.swingy-ball{--sw:40px}}
@@ -862,6 +894,10 @@ launchConfetti();
   var ball = document.querySelector('.swingy-ball');
   var hero = document.getElementById('p3-hero');
   if (!ball || !hero) return;
+  var say  = hero.querySelector('.swingy-say');
+  var bub  = hero.querySelector('.swingy-bub');
+  var typed = hero.querySelector('.swingy-typed');
+  var LINE = 'Hey, what’s up?';
 
   var G = 1600;        // px/s^2
   var E_FLOOR = 0.55;  // restitution
@@ -869,13 +905,17 @@ launchConfetti();
   var ROLL_FRICTION = 1.6;   // per second, while grounded
   var START_DELAY = 3800;    // let the confetti clear first
   var SETTLE_V = 26;         // px/s below which we call it stopped
-  var ROLL_PERIOD = 9000;    // back-and-forth, ms
-  var ROLL_RAMP = 1800;      // ease the oscillation in, ms
+  var ROLL_TIME = 5200;      // rolling to a halt takes this long, ms
+  var ROLL_TURNS = 1.5;      // half-swings on the way in
+  var SWING = 110;           // how far out he likes to wander, px
+  var SAY_AFTER = 260;       // beat between stopping and speaking, ms
+  var TYPE_MS = 42;          // per character
 
-  var R, floorY, boxes = [], W = 0;
+  var R, floorY, boxes = [], W = 0, aimX = 0;
   var x, y, vx, vy, spin = 0;
-  var grounded = false, rollFrom = 0, rollC = 0, rollLo = 0, rollHi = 0;
-  var amp = 0, rollT = 0, rolling = false;
+  var grounded = false, rollFrom = 0, rollLo = 0, rollHi = 0;
+  var target = 0, swing = 0, spinFrom = 0, spinErr = 0;
+  var rollT = 0, rolling = false, stopped = false;
   var started = false, raf = 0, last = 0, visible = true;
 
   function measure(){
@@ -884,12 +924,31 @@ launchConfetti();
     floorY = hb.height;                 // the divider the next section paints
     R = ball.offsetWidth / 2;
     boxes = [];
+    var i, b;
     var btns = hero.querySelectorAll('#p3-hero-text a');
-    for (var i = 0; i < btns.length; i++){
-      var b = btns[i].getBoundingClientRect();
+    for (i = 0; i < btns.length; i++){
+      b = btns[i].getBoundingClientRect();
       boxes.push({ l:b.left-hb.left, r:b.right-hb.left, t:b.top-hb.top, b:b.bottom-hb.top });
     }
+
+    /* Where he is headed: under the middle of the phones. They are hidden on
+       a phone-sized screen, where he ends up on the buttons instead, so aim
+       for the middle of those. */
+    var shot = document.getElementById('p3-phone-desktop');
+    var sb = shot ? shot.getBoundingClientRect() : null;
+    if (sb && sb.width > 40){
+      aimX = sb.left - hb.left + sb.width/2;
+    } else if (boxes.length){
+      var l = Infinity, r = -Infinity;
+      for (i = 0; i < boxes.length; i++){ l = Math.min(l, boxes[i].l); r = Math.max(r, boxes[i].r); }
+      aimX = (l + r) / 2;
+    } else {
+      aimX = W / 2;
+    }
   }
+
+  function degPerPx(){ return 180 / (Math.PI * R); }
+  function wrap180(a){ return ((a + 180) % 360 + 360) % 360 - 180; }
 
   function draw(){
     ball.style.transform = 'translate3d(' + (x-R).toFixed(1) + 'px,' + (y-R).toFixed(1) + 'px,0) rotate(' + spin.toFixed(1) + 'deg)';
@@ -926,17 +985,22 @@ launchConfetti();
     var onFloor = ledge >= floorY - 1;
 
     if (!onFloor){
-      var L = null, Rt = null;                 // the coplanar run under him
-      for (i = 0; i < boxes.length; i++){
-        o = boxes[i];
-        if (Math.abs(o.t - ledge) > 2) continue;
-        if (o.r < cx - R - 1 || o.l > cx + R + 1){   // only if he can reach it
-          if (L === null) continue;
-          if (o.r <= L && L - o.r > R) continue;
-          if (o.l >= Rt && o.l - Rt > R) continue;
+      /* The coplanar run under him: the button he is on, plus any other at
+         the same height near enough for him to bridge. Grown until it stops
+         changing, so it does not depend on the order they come in. */
+      var L = null, Rt = null, grew = true, guard = 0;
+      while (grew && guard++ < 8){
+        grew = false;
+        for (i = 0; i < boxes.length; i++){
+          o = boxes[i];
+          if (Math.abs(o.t - ledge) > 2) continue;
+          var under = o.r >= cx - R - 1 && o.l <= cx + R + 1;
+          var joins = L !== null && o.r >= L - R && o.l <= Rt + R;
+          if (!under && !joins) continue;
+          var nl = L  === null ? o.l : Math.min(L,  o.l);
+          var nr = Rt === null ? o.r : Math.max(Rt, o.r);
+          if (nl !== L || nr !== Rt){ L = nl; Rt = nr; grew = true; }
         }
-        L  = L  === null ? o.l : Math.min(L,  o.l);
-        Rt = Rt === null ? o.r : Math.max(Rt, o.r);
       }
       if (L !== null){ lo = Math.max(lo, L + R); hi = Math.min(hi, Rt - R); }
     }
@@ -955,15 +1019,91 @@ launchConfetti();
      stop rather than snapping into it. */
   function smoothstep(t){ t = Math.min(1, Math.max(0, t)); return t*t*(3 - 2*t); }
 
+  /* He has come to rest somewhere arbitrary; from here he rolls in to the
+     aim point and stops. The approach is a smooth glide with a windowed
+     wobble laid over it, both starting and ending at a standstill. */
   function settleRoll(){
     var f = freeInterval(x, y);
-    rollFrom = x;
-    rollLo = f.lo; rollHi = f.hi;
-    rollC = (f.lo + f.hi) / 2;
-    amp = Math.min(150, (f.hi - f.lo) / 2);
-    if (f.hi <= f.lo) amp = 0;
+    rollFrom = x; rollLo = f.lo; rollHi = f.hi;
+    if (f.hi <= f.lo){ target = x; stop(); return; }
+
+    target = Math.min(Math.max(aimX, f.lo), f.hi);
+    /* If he cannot reach the aim point, stop a whole number of turns away
+       from it rather than fudging the rotation: he is still face up there. */
+    if (Math.abs(target - aimX) > 1){
+      var C = 2*Math.PI*R, n = Math.round((target - aimX)/C), cand;
+      for (var d = 0; d <= 3; d++){
+        cand = aimX + (n+d)*C;
+        if (cand >= f.lo && cand <= f.hi){ target = cand; break; }
+        cand = aimX + (n-d)*C;
+        if (cand >= f.lo && cand <= f.hi){ target = cand; break; }
+      }
+    }
+    var off = Math.abs(rollFrom - target);
+    var room = Math.min(target - f.lo, f.hi - target);
+    swing = Math.max(0, Math.min(SWING - off, room - off));
+    spinFrom = spin;
+    /* Normally nothing to make up -- he was launched pre-turned for exactly
+       this landing -- but the layout can have moved since. */
+    spinErr = -wrap180(spin + (target - rollFrom) * degPerPx());
     rollT = 0;
-    rolling = amp > 12;
+    rolling = off > 1.5 || swing > 8 || Math.abs(spinErr) > 1;
+    if (!rolling) stop();
+  }
+
+  function stop(){
+    rolling = false; stopped = true;
+    x = target;
+    spin = Math.round(spin / 360) * 360;      // face up, exactly
+    draw();
+    if (raf){ cancelAnimationFrame(raf); raf = 0; }
+    speak();
+  }
+
+  /* Bottom-left corner of the bubble, in hero coordinates: off his upper
+     right, dropped back down if that would put it over any of the copy, but
+     never below the surface he is sitting on. On a narrow screen there may be
+     no room alongside him, and then it goes over his head instead. */
+  function placeBubble(){
+    if (!say || !bub) return;
+    var bw = bub.offsetWidth, bh = bub.offsetHeight;
+    var ax = x + R*0.72, onTop = false;
+    if (ax + bw > W - 10){
+      ax = Math.max(8, W - 10 - bw);
+      onTop = ax < x + R*0.5;              // it would be sitting on his face
+    }
+
+    var hb = hero.getBoundingClientRect();
+    var lowest = 0;
+    var above = hero.querySelectorAll('#p3-hero-text h1, #p3-hero-text p, #p3-hero-phone');
+    for (var i = 0; i < above.length; i++){
+      var rects = above[i].getClientRects();
+      for (var j = 0; j < rects.length; j++){
+        var r = rects[j];
+        if (r.right - hb.left <= ax || r.left - hb.left >= ax + bw) continue;
+        lowest = Math.max(lowest, r.bottom - hb.top);
+      }
+    }
+    var ay = Math.max(onTop ? y - R - 8 : y - R*0.25, lowest + 4 + bh);
+    if (!onTop) ay = Math.min(ay, y + R);
+    say.style.transform = 'translate3d(' + ax.toFixed(1) + 'px,' + ay.toFixed(1) + 'px,0)';
+  }
+
+  function type(){
+    var i = 0;
+    var t = setInterval(function(){
+      typed.textContent = LINE.slice(0, ++i);
+      if (i >= LINE.length) clearInterval(t);
+    }, TYPE_MS);
+  }
+
+  function speak(){
+    if (!say || !typed) return;
+    placeBubble();
+    setTimeout(function(){                 // a beat, then it pops, then he talks
+      say.classList.add('in');
+      setTimeout(type, 220);
+    }, SAY_AFTER);
   }
 
   function step(ts){
@@ -975,14 +1115,14 @@ launchConfetti();
 
     if (rolling){
       rollT += dt*1000;
-      var e = smoothstep(rollT/ROLL_RAMP);
-      var c = rollFrom + (rollC - rollFrom) * e;      // drift to the middle
-      /* While he is still drifting, keep the swing inside the room he has, so
-         he never overhangs the ledge he stopped on. */
-      var a = Math.min(amp * e, Math.min(c - rollLo, rollHi - c));
-      var nx = c + a * Math.sin(2*Math.PI * rollT/ROLL_PERIOD);
-      spin += (nx - x) / R * (180/Math.PI);
-      x = nx;
+      var u = rollT / ROLL_TIME;
+      if (u >= 1){ stop(); return; }
+      var glide = 1 - smoothstep(u);                  // in to the aim point
+      var win = Math.sin(Math.PI*u); win *= win;      // wobble, fading both ends
+      var nx = target + (rollFrom - target)*glide
+                      + swing*win*Math.sin(2*Math.PI*ROLL_TURNS*u);
+      spin = spinFrom + (nx - rollFrom)*degPerPx() + spinErr*smoothstep(u);
+      x = Math.min(Math.max(nx, rollLo), rollHi);
       draw();
       return;
     }
@@ -1013,28 +1153,38 @@ launchConfetti();
       if (x + R > W){ x = W - R; vx = -vx*E_BOX; }
     }
 
+    spin += (x - px) / R * (180/Math.PI);
+
     if (grounded){
       vx -= vx * Math.min(1, ROLL_FRICTION*dt);
       if (Math.abs(vx) < SETTLE_V && Math.abs(vy) < SETTLE_V){
-        settleRoll();
         vx = vy = 0;
+        settleRoll();
+        if (stopped) return;             // stop() has already drawn him
       }
     }
-    spin += (x - px) / R * (180/Math.PI);
     draw();
   }
 
-  /* Resting pose for reduced motion: the same place he would have ended up,
-     without the trip. On the line unless a button is under him, in which case
-     he sits on top of it. */
-  function place(){
-    measure();
-    x = W/2; y = floorY - R;
+  /* Whatever he would be standing on at this x. */
+  function surfaceY(cx){
+    var yy = floorY - R;
     for (var i = 0; i < boxes.length; i++){
       var o = boxes[i];
-      if (x + R > o.l && x - R < o.r) y = Math.min(y, o.t - R);
+      if (cx + R > o.l && cx - R < o.r) yy = Math.min(yy, o.t - R);
     }
-    spin = 0; draw();
+    return yy;
+  }
+
+  /* The finished pose, without the trip: for reduced motion, and for when the
+     layout changes after he has already arrived. */
+  function pose(){
+    measure();
+    x = Math.min(Math.max(aimX, R), W - R);
+    y = surfaceY(x);
+    spin = 0;
+    draw();
+    placeBubble();
   }
 
   function start(){
@@ -1042,6 +1192,10 @@ launchConfetti();
     started = true;
     measure();
     x = -R; y = -R - 90; vx = 540; vy = 0;   // in from the upper left
+    /* Every degree he turns comes from how far he has travelled, so the pose
+       he will hold at the aim point is settled before he sets off. Start him
+       turned by the opposite of it and he arrives face up. */
+    spin = -wrap180((aimX - x) * degPerPx());
     last = 0; raf = requestAnimationFrame(step);
   }
 
@@ -1049,14 +1203,19 @@ launchConfetti();
   if (reduce.matches){
     /* Wait for the hero to reach its real height -- the script runs inline,
        long before the screenshots and webfonts have settled it. */
-    var pose = function(){ place(); };
-    if (document.readyState === 'complete') pose();
-    else window.addEventListener('load', pose);
-    window.addEventListener('resize', pose);
+    var posed = function(){
+      pose();
+      if (typed) typed.textContent = LINE;
+      if (say) say.classList.add('in');
+    };
+    if (document.readyState === 'complete') posed();
+    else window.addEventListener('load', posed);
+    window.addEventListener('resize', posed);
     return;
   }
 
   window.addEventListener('resize', function(){
+    if (stopped){ pose(); return; }      // he is done: just re-place him
     var wasRolling = rolling;
     measure();
     if (wasRolling){                     // the layout moved under him: re-land
