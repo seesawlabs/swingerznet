@@ -587,19 +587,28 @@ function launchConfetti(){
   font-size:15px;line-height:1.45;font-weight:500;letter-spacing:-.01em;
   box-shadow:0 8px 24px rgba(3,2,19,.12);
   transform-origin:0 100%;transform:scale(.4);opacity:0;
+  transition:transform .2s cubic-bezier(.4,0,1,1),opacity .16s linear;
 }
 .swingy-say.in .swingy-bub{
   transform:scale(1);opacity:1;
   transition:transform .26s cubic-bezier(.34,1.56,.64,1),opacity .15s linear;
 }
 .swingy-ghost{visibility:hidden}
-.swingy-typed{position:absolute;left:15px;top:10px}
+.swingy-typed{position:absolute;left:15px;right:15px;top:10px}
 @media(prefers-reduced-motion:reduce){
-  .swingy-say .swingy-bub{transition:none}
+  .swingy-bub,.swingy-say.in .swingy-bub{transition:none}
 }
 @media(max-width:700px){
   .swingy-bub{font-size:13.5px;padding:8px 13px}
-  .swingy-typed{left:13px;top:8px}
+  .swingy-typed{left:13px;right:13px;top:8px}
+}
+/* Too narrow to say a long line beside him and clear of the buttons, so let
+   it wrap instead. The width has to be stated: the bubble hangs off a
+   zero-width anchor, so there is no available width for it to shrink to fit
+   and it would break at every space. The ghost sets the box and the typed
+   copy fills the same one, so both break in the same places. */
+@media(max-width:360px){
+  .swingy-bub{white-space:normal;width:126px}
 }
 /* Small enough that when he comes to rest on top of the store buttons -- the
    only place he fits on a phone -- he still clears the line of copy above. */
@@ -896,8 +905,14 @@ launchConfetti();
   if (!ball || !hero) return;
   var say  = hero.querySelector('.swingy-say');
   var bub  = hero.querySelector('.swingy-bub');
+  var ghost = hero.querySelector('.swingy-ghost');
   var typed = hero.querySelector('.swingy-typed');
-  var LINE = 'Hey, what’s up?';
+  var LINES = [
+    'Hey, what’s up?',
+    'Come here often?',
+    'Looking for a partner?',
+    'You like to party?'
+  ];
 
   var G = 1600;        // px/s^2
   var E_FLOOR = 0.55;  // restitution
@@ -910,12 +925,15 @@ launchConfetti();
   var SWING = 110;           // how far out he likes to wander, px
   var SAY_AFTER = 260;       // beat between stopping and speaking, ms
   var TYPE_MS = 42;          // per character
+  var HOLD = 3600;           // a finished line stays up this long, ms
+  var GAP = 900;             // quiet beat before the next one, ms
 
   var R, floorY, boxes = [], W = 0, aimX = 0;
   var x, y, vx, vy, spin = 0;
   var grounded = false, rollFrom = 0, rollLo = 0, rollHi = 0;
   var target = 0, swing = 0, spinFrom = 0, spinErr = 0;
   var rollT = 0, rolling = false, stopped = false;
+  var lineAt = 0, typer = 0, cycleT = 0;
   var started = false, raf = 0, last = 0, visible = true;
 
   function measure(){
@@ -1089,21 +1107,44 @@ launchConfetti();
     say.style.transform = 'translate3d(' + ax.toFixed(1) + 'px,' + ay.toFixed(1) + 'px,0)';
   }
 
+  /* Hold the queue while the hero is off screen: no point talking to nobody,
+     and he would work through the whole list before anyone scrolled back. */
+  function after(ms, fn){
+    clearTimeout(cycleT);
+    cycleT = setTimeout(function(){
+      if (!visible){ after(700, fn); return; }
+      fn();
+    }, ms);
+  }
+
   function type(){
-    var i = 0;
-    var t = setInterval(function(){
-      typed.textContent = LINE.slice(0, ++i);
-      if (i >= LINE.length) clearInterval(t);
+    var line = LINES[lineAt], i = 0;
+    clearInterval(typer);
+    typer = setInterval(function(){
+      typed.textContent = line.slice(0, ++i);
+      if (i < line.length) return;
+      clearInterval(typer); typer = 0;
+      after(HOLD, hide);
     }, TYPE_MS);
   }
 
+  function show(){
+    ghost.textContent = LINES[lineAt];     // the bubble sizes to the whole line
+    typed.textContent = '';
+    placeBubble();                         // which means it has to be re-placed
+    say.classList.add('in');
+    after(220, type);                      // let it finish popping first
+  }
+
+  function hide(){
+    say.classList.remove('in');
+    lineAt = (lineAt + 1) % LINES.length;
+    after(GAP, show);
+  }
+
   function speak(){
-    if (!say || !typed) return;
-    placeBubble();
-    setTimeout(function(){                 // a beat, then it pops, then he talks
-      say.classList.add('in');
-      setTimeout(type, 220);
-    }, SAY_AFTER);
+    if (!say || !typed || !ghost) return;
+    after(SAY_AFTER, show);
   }
 
   function step(ts){
@@ -1205,7 +1246,7 @@ launchConfetti();
        long before the screenshots and webfonts have settled it. */
     var posed = function(){
       pose();
-      if (typed) typed.textContent = LINE;
+      if (typed) typed.textContent = LINES[0];   // one line, no cycling
       if (say) say.classList.add('in');
     };
     if (document.readyState === 'complete') posed();
